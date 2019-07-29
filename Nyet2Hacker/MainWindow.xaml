@@ -9,28 +9,38 @@
         FontFamily="Calibri" AllowDrop="True"
         DragEnter="Window_DragEnter"
         Drop="Window_Drop"
+        KeyDown="Window_KeyDown"
     >
+    <Window.InputBindings>
+        <KeyBinding Key="D" Modifiers="Ctrl" Command="{Binding DoneCommand}"/>
+    </Window.InputBindings>
     <Window.Resources>
         <Style TargetType="CheckBox">
             <Setter Property="Margin" Value="5, 0, 5, 0"/>
         </Style>
         <DataTemplate
-            x:Key="OrilineTemplate"
+            x:Key="LineTemplate"
             DataType="{x:Type local:LineViewModel}"
         >
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition/>
+                    <ColumnDefinition/>
                 </Grid.ColumnDefinitions>
-                <TextBlock
-                    Grid.Column="1"
-                    Text="{Binding OriginalText}" VerticalAlignment="Center"
-                />
                 <CheckBox
                     Grid.Column="0"
                     IsChecked="{Binding Done}"
                     VerticalAlignment="Center"
+                />
+                <TextBlock
+                    Grid.Column="1"
+                    Text="{Binding OriginalText}" VerticalAlignment="Center"
+                />
+                <TextBlock
+                    Grid.Column="2"
+                    Text="{Binding TransText}" VerticalAlignment="Center"
+                    HorizontalAlignment="Left"
                 />
             </Grid>
         </DataTemplate>
@@ -54,19 +64,20 @@
             </Grid>
         </DataTemplate>
     </Window.Resources>
-    <Grid>
+    <Grid Name="MainGrid">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition/>
+            <ColumnDefinition Width="150*"/>
+            <ColumnDefinition Width="75*"/>
+            <ColumnDefinition Width="75*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
+            <RowDefinition/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
             <RowDefinition Height="133"/>
         </Grid.RowDefinitions>
         <DockPanel 
-            Grid.Row="4"
+            Grid.Row="2"
             HorizontalAlignment="Left" Visibility="Collapsed" Width="0">
             <DockPanel.Resources>
                 <Style TargetType="Button">
@@ -81,11 +92,11 @@
         </DockPanel>
         <RichTextBox 
             x:Name="output"
-            Grid.Row="3"
+            Grid.Row="2"
             IsReadOnly="True"
             Margin="3, 3, 3, 3"
             FontFamily="Consolas"
-            Grid.ColumnSpan="2"
+            Grid.ColumnSpan="4"
         >
             <FlowDocument>
                 <Paragraph>
@@ -103,37 +114,60 @@
             </FlowDocument>
         </RichTextBox>
         <ListBox
+            Name="LineList"
             ItemsSource="{Binding Lines}"
-            SelectedIndex="{Binding SelectedLine}"
-            Grid.ColumnSpan="2"
-            ItemTemplate="{StaticResource OrilineTemplate}"
+            SelectedIndex="{Binding SelectedIndex}"
+            Grid.ColumnSpan="4"
+            ItemTemplate="{StaticResource LineTemplate}"
             HorizontalContentAlignment="Stretch"
             FontFamily="Consolas"
-        />
-        <TextBox 
+            KeyDown="LineList_KeyDown"
+        >
+        </ListBox>
+        <TextBox
+            Name="Editor"
             Grid.Row="1"
             Grid.Column="1"
             KeyDown="TextBox_KeyDown"
             AcceptsReturn="False"
-            Text="{Binding WorkText}"
-            Height="30"
+            Text="{Binding WorkText, UpdateSourceTrigger=PropertyChanged}"
         />
+        <TextBlock
+            Grid.Row="1"
+            Grid.Column="2"
+            VerticalAlignment="Center"
+            HorizontalAlignment="Right"
+            Margin="5, 5, 5, 5"
+        >
+            <Run Text="{Binding WorkText.Length, Mode=OneWay}"/>
+            <Run Text="/"/>
+            <Run Text="{Binding SelectedLine.OriginalText.Length, Mode=OneWay}"/>
+        </TextBlock>
+        <TextBlock
+            Grid.Row="1"
+            Grid.Column="3"
+            VerticalAlignment="Center"
+            HorizontalAlignment="Right"
+            Margin="5, 5, 5, 5"
+        >
+            <Run Text="{Binding DoneStrings, Mode=OneWay}"/>
+            <Run Text="out of"/>
+            <Run Text="{Binding TotalStrings, Mode=OneWay}"/>
+            <Run Text="-"/>
+            <Run Text="{Binding CompletionPercent, Mode=OneWay}"/>
+            <Run Text="percent"/>
+        </TextBlock>
         <CheckBox
             VerticalContentAlignment="Center"
             Grid.Row="1"
             Grid.Column="0"
+            IsChecked="{Binding SelectedLine.Done}"
         >
             <TextBlock>
                 Is Edited
                 <LineBreak/>
-                (Ctrl-E)
+                (Ctrl-D)
             </TextBlock>
         </CheckBox>
-        <ListBox
-            ItemsSource="{Binding Lines}"
-            Grid.Row="2"
-            SelectedIndex="{Binding SelectedLine}" Grid.ColumnSpan="2" ItemTemplate="{DynamicResource TranslineTemplate}"
-            HorizontalContentAlignment="Stretch"
-        />
     </Grid>
 </Window>

@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Win32;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -6,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -16,6 +18,19 @@ namespace Nyet2Hacker
     {
         Ovl,
         Project
+    }
+
+    static class Extensions
+    {
+        public static void FocusIndex(this ListBox self, int i)
+        {
+            self.SelectedIndex = i;
+            var container = self.ItemContainerGenerator.ContainerFromIndex(i);
+            if (container is UIElement uiElement && uiElement.Focusable)
+            {
+                uiElement.Focus();
+            }
+        }
     }
 
     public class LineViewModel : PropertyChangedBase
@@ -35,12 +50,21 @@ namespace Nyet2Hacker
         public string TransText
         {
             get => this.line.TransText;
+            internal set => this.Set(
+                v => this.line.TransText = v,
+                value,
+                this.line.TransText
+            );
         }
 
         public bool Done
         {
             get => this.line.Done;
-            set => this.Set(v => this.line.Done = v, value, this.line.Done);
+            set => this.Set(
+                v => this.line.Done = v,
+                value,
+                this.line.Done
+            );
         }
     }
 
@@ -48,15 +72,112 @@ namespace Nyet2Hacker
     {
         private string projectPath;
         private bool dirty;
-        private int selectedLine;
+        private int selectedIndex;
         private string workText;
         private ReadOnlyCollection<LineViewModel> lines;
+        public DelegateCommand DoneCommand { get; }
 
+        private LineViewModel selectedLine;
+        private bool textTooLong;
 
-        internal void Load(ProjectFile proj)
+        private int totalStrings;
+        private int doneStrings;
+        private decimal completionPercent;
+
+        public MainWindowViewModel()
+        {
+            this.DoneCommand = new DelegateCommand(true, () =>
+            {
+                if (!(this.SelectedLine is null))
+                {
+                    this.SelectedLine.Done = !this.SelectedLine.Done;
+                }
+            });
+        }
+
+        internal void Load(ProjectFile proj, string path)
         {
             this.Lines = new ReadOnlyCollection<LineViewModel>(
                 proj.Lines.Select(l => new LineViewModel(l)).ToList()
+            );
+
+            this.projectPath = path;
+            this.CalcCompletion();
+        }
+
+        public int TotalStrings
+        {
+            get => this.totalStrings;
+            private set => this.Set(ref this.totalStrings, value);
+        }
+
+        public int DoneStrings
+        {
+            get => this.doneStrings;
+            private set => this.Set(ref this.doneStrings, value);
+        }
+
+        public decimal CompletionPercent
+        {
+            get => this.completionPercent;
+            private set => this.Set(ref this.completionPercent, value);
+        }
+
+        public bool TextTooLong
+        {
+            get => this.textTooLong;
+            private set => this.Set(ref this.textTooLong, value);
+        }
+
+        public bool Commit()
+        {
+            if (this.TextTooLong || this.SelectedLine is null)
+            {
+                return false;
+            }
+
+            this.SelectedLine.TransText = this.WorkText;
+            this.CalcCompletion();
+            return true;
+        }
+
+        private void CalcCompletion()
+        {
+            this.TotalStrings = this.lines.Count;
+            this.DoneStrings = this.lines.Where(l => l.Done).Count();
+            if (this.totalStrings == 0)
+            {
+                this.CompletionPercent = 0;
+            }
+            else
+            {
+                this.CompletionPercent = decimal.Round(
+                    (decimal)this.doneStrings
+                        / this.totalStrings
+                        * 100,
+                    2
+                );
+            }
+        }
+
+        private void Validate()
+        {
+            var v = this.selectedLine;
+            this.TextTooLong = !(v is null)
+                && v.OriginalText?.Length < this.WorkText?.Length;
+        }
+
+        public LineViewModel SelectedLine
+        {
+            get => this.selectedLine;
+            private set => this.Set(
+                value,
+                v =>
+                {
+                    this.selectedLine = v;
+                    this.Validate();
+                },
+                () => this.selectedLine
             );
         }
 
@@ -65,21 +186,23 @@ namespace Nyet2Hacker
             get => this.projectPath;
             set => this.Set(ref this.projectPath, value);
         }
+
         public bool Dirty
         {
             get => this.dirty;
             private set => this.Set(ref this.dirty, value);
         }
-        public int SelectedLine
+
+        public int SelectedIndex
         {
-            get => this.selectedLine;
+            get => this.selectedIndex;
             set
             {
                 this.Set(
                     value,
-                    v => 
+                    v =>
                     {
-                        this.selectedLine = v;
+                        this.selectedIndex = v;
                         if (v < this.lines.Count && v >= 0)
                         {
                             var selLine = this.lines[v];
@@ -91,17 +214,28 @@ namespace Nyet2Hacker
                             {
                                 this.WorkText = selLine.TransText;
                             }
+                            this.SelectedLine = selLine;
                         }
                     },
-                    () => this.selectedLine
+                    () => this.selectedIndex
                 );
             }
         }
+
         public string WorkText
         {
             get => this.workText;
-            set => this.Set(ref this.workText, value);
+            set => this.Set(
+            value,
+            v =>
+            {
+                this.workText = v;
+                this.Validate();
+            },
+            () => this.workText
+        );
         }
+
         public ReadOnlyCollection<LineViewModel> Lines
         {
             get => this.lines;
@@ -205,6 +339,7 @@ namespace Nyet2Hacker
                     t = FileType.Ovl;
                     return true;
                 case projectExtension:
+                    t = FileType.Project;
                     return true;
                 default:
                     return false;
@@ -273,82 +408,6 @@ namespace Nyet2Hacker
             return sb.ToString();
         }
 
-        private bool LoadOvl(FileStream fs, out ProjectFile proj)
-        {
-            const int arrayLength = 588;
-            const int arrayBase = 0x1CCFC;
-            const int stringBase = 0x1D810;
-
-            void eof()
-            {
-                this.WriteError("Encountered end of file while reading .ovl.");
-            }
-
-            //if we somehow go beyond this, we're in trouble:
-            const int max = 0x20DFC;
-
-            proj = null;
-            if (fs.Length < 0x20DFC)
-            {
-                eof();
-                return false;
-            }
-
-            proj = new ProjectFile
-            {
-                Lines = new List<Line>(arrayLength)
-            };
-            var buffer = new byte[256];
-            long posForArr = arrayBase;
-            for (int i = 0; i < arrayLength; i++)
-            {
-                fs.Seek(posForArr, SeekOrigin.Begin);
-                if (fs.Read(buffer, 0, 4) != 4)
-                {
-                    eof();
-                    return false;
-                }
-
-                byte strLen = buffer[0];
-                int offset = ParseLittleEndInt16(buffer, 2);
-                int strLoc = offset + stringBase;
-                if (strLoc + strLen > max)
-                {
-                    eof();
-                    return false;
-                }
-
-                //now read the string.
-                posForArr = fs.Position;
-                fs.Seek(strLoc, SeekOrigin.Begin);
-                fs.Read(buffer, 0, strLen);
-                string text;
-                try
-                {
-                    var enc = Encoding.GetEncoding(437);
-                    text = enc.GetString(buffer, 0, strLen);
-                }
-                catch (Exception e)
-                {
-                    this.LogError(
-                        e,
-                        $"Falied to decode byte sequence {FormatBrackety(buffer.Take(strLen))} at {strLoc}."
-                    );
-
-                    return false;
-                }
-
-                proj.Lines.Add(new Line
-                {
-                    Done = false,
-                    Index = i,
-                    OriginalText = text
-                });
-            }
-
-            return true;
-        }
-
         private bool LoadProj(FileStream fs, out ProjectFile proj)
         {
             try
@@ -395,6 +454,7 @@ namespace Nyet2Hacker
                 {
                     case FileType.Ovl:
                         ok = this.LoadOvl(fs, out projFile);
+                        fileName = null;
                         break;
                     default:
                     case FileType.Project:
@@ -408,11 +468,258 @@ namespace Nyet2Hacker
                 return;
             }
 
-            this.ViewModel.Load(projFile);
+            this.ViewModel.Load(projFile, fileName);
+            this.project = projFile;
+            this.LineList.FocusIndex(0);
         }
 
         private void TextBox_KeyDown(object sender, KeyEventArgs e)
         {
+            if (e.Key == Key.Enter)
+            {
+                if (this.ViewModel.Commit())
+                {
+                    int i = this.LineList.SelectedIndex;
+                    if (i < 0)
+                    {
+                        return;
+                    }
+
+                    //if (i < this.LineList.Items.Count - 1)
+                    //{
+                    //    i++;
+                    //}
+
+                    this.LineList.FocusIndex(i);
+                }
+            }
+        }
+
+        private void LineList_KeyDown(object sender, KeyEventArgs e)
+        {
+            int i = this.LineList.SelectedIndex;
+            if (e.Key == Key.Enter)
+            {
+                this.Editor.Focus();
+                this.Editor.SelectAll();
+            }
+            else if (e.Key == Key.J) //Vim delight
+            {
+                if (i >= 0 && i < this.LineList.Items.Count)
+                {
+                    i++;
+                    this.LineList.FocusIndex(i);
+                }
+            }
+            else if (e.Key == Key.K)
+            {
+                if (i > 0)
+                {
+                    i--;
+                    this.LineList.FocusIndex(i);
+                }
+            }
+        }
+
+        private void Save(FileType type)
+        {
+            if (this.project is null)
+            {
+                return;
+            }
+            string path;
+            if (this.ViewModel?.ProjectPath is string exPath)
+            {
+                path = exPath;
+            }
+            else
+            {
+                var dlg = new SaveFileDialog();
+                switch (type)
+                {
+                    case FileType.Ovl:
+                        dlg.Filter = "NYET2.OVL|NYET2.OVL";
+                        break;
+                    case FileType.Project:
+                        dlg.Filter = "Nyet 2 Hacker Files (*.n2h)|*.n2h";
+                        break;
+                }
+                if (dlg.ShowDialog(this) == true)
+                {
+                    path = dlg.FileName;
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            FileStream fs;
+            try
+            {
+                fs = File.Open(
+                    path,
+                    FileMode.OpenOrCreate,
+                    FileAccess.ReadWrite
+                );
+            }
+            catch (Exception e)
+            {
+                string message = $"Failed to open file ${path} for writing.";
+                this.LogError(e, message);
+                this.WriteError(message);
+                return;
+            }
+
+            using (fs)
+            {
+                switch (type)
+                {
+                    case FileType.Ovl:
+                        this.SaveOvl(fs, this.project);
+                        break;
+                    default:
+                    case FileType.Project:
+                        this.SaveProject(fs, this.project);
+                        break;
+                }
+            }
+        }
+
+        const int ovlArrayLength = 588;
+        const int ovlArrayBase = 0x1CCFC;
+        const int ovlStringBase = 0x1D810;
+
+        //if we somehow go beyond this, we're in trouble:
+        const int ovlMax = 0x20DFC;
+        private void ovlEof()
+        {
+            this.WriteError("Encountered end of file while reading .ovl.");
+        }
+
+        static readonly Encoding ovlEncoding = Encoding.GetEncoding(437);
+        private ProjectFile project;
+
+        private bool LoadOvl(FileStream fs, out ProjectFile proj)
+        {
+            proj = null;
+            if (fs.Length < 0x20DFC)
+            {
+                ovlEof();
+                return false;
+            }
+
+            proj = new ProjectFile
+            {
+                Lines = new List<Line>(ovlArrayLength)
+            };
+            var buffer = new byte[256];
+            long posForArr = ovlArrayBase;
+            for (int i = 0; i < ovlArrayLength; i++)
+            {
+                fs.Seek(posForArr, SeekOrigin.Begin);
+                if (fs.Read(buffer, 0, 4) != 4)
+                {
+                    ovlEof();
+                    return false;
+                }
+
+                byte strLen = buffer[0];
+                int offset = ParseLittleEndInt16(buffer, 2);
+                int strLoc = offset + ovlStringBase;
+                if (strLoc + strLen > ovlMax)
+                {
+                    ovlEof();
+                    return false;
+                }
+
+                //now read the string.
+                posForArr = fs.Position;
+                fs.Seek(strLoc, SeekOrigin.Begin);
+                fs.Read(buffer, 0, strLen);
+                string text;
+                try
+                {
+                    var enc = ovlEncoding;
+                    text = enc.GetString(buffer, 0, strLen);
+                }
+                catch (Exception e)
+                {
+                    this.LogError(
+                        e,
+                        $"Falied to decode byte sequence {FormatBrackety(buffer.Take(strLen))} at {strLoc}."
+                    );
+
+                    return false;
+                }
+
+                proj.Lines.Add(new Line
+                {
+                    Done = false,
+                    Index = i,
+                    OriginalText = text
+                });
+            }
+
+            return true;
+        }
+
+        private void SaveProject(FileStream fs, ProjectFile proj)
+        {
+            var ser = new JsonSerializer();
+            fs.SetLength(0);
+            using (var tw = new StreamWriter(fs))
+            using (var jw = new JsonTextWriter(tw))
+            {
+                ser.Serialize(jw, proj);
+            }
+        }
+
+        private bool SaveOvl(FileStream fs, ProjectFile proj)
+        {
+            if (fs.Length < 0x20DFC)
+            {
+                ovlEof();
+                return false;
+            }
+
+            var buffer = new byte[2];
+            foreach (var line in proj.Lines)
+            {
+                if (!line.Done || line.TransText is null)
+                {
+                    continue;
+                }
+
+                //Write the length byte:
+                fs.Seek(ovlArrayBase + (line.Index * 4), SeekOrigin.Begin);
+                fs.WriteByte((byte)line.TransText.Length);
+
+                //And write the string.
+                fs.Seek(1, SeekOrigin.Current);
+                fs.Read(buffer, 0, 2);
+                var offset = ParseLittleEndInt16(buffer, 0);
+                fs.Seek(offset + ovlStringBase, SeekOrigin.Begin);
+                var bytes = ovlEncoding.GetBytes(line.TransText);
+                fs.Write(bytes, 0, bytes.Length);
+            }
+
+            return true;
+        }
+
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+            if ((e.KeyboardDevice.Modifiers & ModifierKeys.Control) > 0)
+            {
+                if (e.Key == Key.E)
+                {
+                    this.Save(FileType.Ovl);
+                }
+                else if (e.Key == Key.S)
+                {
+                    this.Save(FileType.Project);
+                }
+            }
         }
     }
 }
