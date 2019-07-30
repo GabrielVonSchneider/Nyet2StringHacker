@@ -528,7 +528,8 @@ namespace Nyet2Hacker
                 return;
             }
             string path;
-            if (this.ViewModel?.ProjectPath is string exPath)
+            if (this.ViewModel?.ProjectPath is string exPath
+                && type == FileType.Project)
             {
                 path = exPath;
             }
