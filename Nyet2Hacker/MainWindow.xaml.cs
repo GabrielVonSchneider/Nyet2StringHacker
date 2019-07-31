@@ -687,7 +687,7 @@ namespace Nyet2Hacker
             var buffer = new byte[2];
             foreach (var line in proj.Lines)
             {
-                if (!line.Done || line.TransText is null)
+                if (string.IsNullOrEmpty(line.TransText))
                 {
                     continue;
                 }
