@@ -66,6 +66,8 @@ namespace Nyet2Hacker
                 this.line.Done
             );
         }
+
+        public int Index => this.line.Index;
     }
 
     public class MainWindowViewModel : PropertyChangedBase

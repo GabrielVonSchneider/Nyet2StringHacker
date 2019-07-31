@@ -24,23 +24,31 @@
         >
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="20"/>
+                    <ColumnDefinition Width="auto"/>
                     <ColumnDefinition/>
                     <ColumnDefinition/>
                 </Grid.ColumnDefinitions>
-                <CheckBox
-                    Grid.Column="0"
-                    IsChecked="{Binding Done}"
+                <TextBlock 
+                    HorizontalAlignment="Right"
                     VerticalAlignment="Center"
+                    Text="{Binding Index, Mode=OneWay}"
+                    FontSize="11"
+                    Margin="0, 0, 2, 0"
                 />
-                <TextBlock
+                <CheckBox
                     Grid.Column="1"
-                    Text="{Binding OriginalText}" VerticalAlignment="Center"
+                    IsChecked="{Binding Done}"
+                    VerticalAlignment="Center" Grid.ColumnSpan="1" Margin="0,2"
                 />
                 <TextBlock
                     Grid.Column="2"
+                    Text="{Binding OriginalText}" VerticalAlignment="Center" Margin="0,2"
+                />
+                <TextBlock
+                    Grid.Column="3"
                     Text="{Binding TransText}" VerticalAlignment="Center"
-                    HorizontalAlignment="Left"
+                    HorizontalAlignment="Left" Margin="0,2"
                 />
             </Grid>
         </DataTemplate>
