@@ -253,6 +253,7 @@ namespace Nyet2Hacker
         {
             InitializeComponent();
             this.DataContext = new MainWindowViewModel();
+            this.SearchPanel.Visibility = Visibility.Collapsed;
         }
 
         private MainWindowViewModel ViewModel =>
@@ -722,7 +723,87 @@ namespace Nyet2Hacker
                 {
                     this.Save(FileType.Project);
                 }
+                else if (e.Key == Key.F)
+                {
+                    this.Search();
+                }
             }
+        }
+
+        private void Search()
+        {
+            this.SearchPanel.Visibility = Visibility.Visible;
+            this.SearchBox.Focus();
+            this.SearchBox.SelectAll();
+        }
+
+        private void SearchBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                if ((e.KeyboardDevice.Modifiers & ModifierKeys.Control) > 0)
+                {
+                    if (this.LineList.SelectedIndex >= 0)
+                    {
+                        this.SearchPanel.Visibility = Visibility.Collapsed;
+                        this.LineList.FocusIndex(this.LineList.SelectedIndex);
+                    }
+                }
+                else
+                {
+                    string searchText = this.SearchBox.Text;
+                    int startIndex = 0;
+                    if (this.LineList.SelectedIndex >= 0)
+                    {
+                        startIndex = this.LineList.SelectedIndex;
+                    }
+
+                    bool match(int index)
+                    {
+                        return this.ViewModel.Lines[index].OriginalText?.IndexOf(
+                            searchText,
+                            StringComparison.CurrentCultureIgnoreCase
+                        ) >= 0;
+                    }
+                    int lineCount = this.LineList.Items.Count;
+                    int i = startIndex;
+                    if ((e.KeyboardDevice.Modifiers & ModifierKeys.Shift) > 0)
+                    {
+                        for (i--; i >= 0; i--)
+                        {
+                            if (match(i))
+                            {
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        for (i++; i < lineCount; i++)
+                        {
+                            if (match(i))
+                            {
+                                break;
+                            }
+                        }
+                    }
+
+                    if (i >= 0 && i < lineCount)
+                    {
+                        this.LineList.SelectedIndex = i;
+                        this.LineList.ScrollIntoView(this.LineList.Items[i]);
+                    }
+                }
+            }
+            else if (e.Key == Key.Escape)
+            {
+                this.SearchPanel.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            this.SearchPanel.Visibility = Visibility.Collapsed;
         }
     }
 }
