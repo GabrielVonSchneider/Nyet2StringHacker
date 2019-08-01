@@ -10,6 +10,7 @@
         DragEnter="Window_DragEnter"
         Drop="Window_Drop"
         KeyDown="Window_KeyDown"
+        Focusable="False"
     >
     <Window.InputBindings>
         <KeyBinding Key="D" Modifiers="Ctrl" Command="{Binding DoneCommand}"/>
@@ -40,6 +41,7 @@
                     Grid.Column="1"
                     IsChecked="{Binding Done}"
                     VerticalAlignment="Center" Grid.ColumnSpan="1" Margin="0,2"
+                    Focusable="False"
                 />
                 <TextBlock
                     Grid.Column="2"
@@ -49,25 +51,6 @@
                     Grid.Column="3"
                     Text="{Binding TransText}" VerticalAlignment="Center"
                     HorizontalAlignment="Left" Margin="0,2"
-                />
-            </Grid>
-        </DataTemplate>
-        <DataTemplate
-            x:Key="TranslineTemplate"
-            DataType="{x:Type local:LineViewModel}">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition/>
-                </Grid.ColumnDefinitions>
-                <TextBlock
-                    Grid.Column="1"
-                    Text="{Binding TransText}" VerticalAlignment="Center"
-                />
-                <CheckBox
-                    Grid.Column="0"
-                    IsChecked="{Binding Done}"
-                    VerticalAlignment="Center"
                 />
             </Grid>
         </DataTemplate>
@@ -212,6 +195,7 @@
             Grid.ColumnSpan="4"
         >
             <Button
+                Name="ExitSearchButton"
                 FocusVisualStyle="{x:Null}"
                 Height="15"
                 Width="15"
@@ -221,7 +205,9 @@
                 VerticalAlignment="Center"
                 Template="{DynamicResource XButton}"
                 Margin="1, 1, 1, 1"
-                Click="Button_Click"
+                Click="ExitSearchButton_Click"
+                ToolTip="Close Search Bar (Esc)"
+                Focusable="True"
             />
             <TextBox
                 Name="SearchBox"
@@ -230,6 +216,7 @@
                 Margin="1, 1, 1, 1"
                 AcceptsReturn="False"
                 KeyDown="SearchBox_KeyDown"
+                Height="15"
             />
         </DockPanel>
         <TextBox
@@ -239,6 +226,8 @@
             KeyDown="TextBox_KeyDown"
             AcceptsReturn="False"
             Text="{Binding WorkText, UpdateSourceTrigger=PropertyChanged}"
+            Height="20"
+            Margin="3, 3, 3, 3"
         />
         <TextBlock
             Grid.Row="2"
@@ -270,8 +259,9 @@
             Grid.Row="2"
             Grid.Column="0"
             IsChecked="{Binding SelectedLine.Done}"
+            Margin="3, 3, 3, 3"
         >
-            <TextBlock>
+            <TextBlock Focusable="False">
                 Is Edited
                 <LineBreak/>
                 (Ctrl-D)

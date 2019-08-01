@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -473,7 +474,20 @@ namespace Nyet2Hacker
 
             this.ViewModel.Load(projFile, fileName);
             this.project = projFile;
-            this.LineList.FocusIndex(0);
+
+            var gen = this.LineList.ItemContainerGenerator;
+            void statusChanged (object sender, EventArgs args)
+            {
+                if (gen.Status == GeneratorStatus.ContainersGenerated)
+                {
+                    gen.StatusChanged -= statusChanged;
+                    this.LineList.FocusIndex(0);
+                }
+            };
+            if (projFile.Lines.Count > 0)
+            {
+                gen.StatusChanged += statusChanged;
+            }
         }
 
         private void TextBox_KeyDown(object sender, KeyEventArgs e)
@@ -741,69 +755,74 @@ namespace Nyet2Hacker
         {
             if (e.Key == Key.Enter)
             {
-                if ((e.KeyboardDevice.Modifiers & ModifierKeys.Control) > 0)
+                string searchText = this.SearchBox.Text;
+                int startIndex = 0;
+                if (this.LineList.SelectedIndex >= 0)
                 {
-                    if (this.LineList.SelectedIndex >= 0)
+                    startIndex = this.LineList.SelectedIndex;
+                }
+
+                bool match(int index)
+                {
+                    return this.ViewModel.Lines[index].OriginalText?.IndexOf(
+                        searchText,
+                        StringComparison.CurrentCultureIgnoreCase
+                    ) >= 0;
+                }
+                int lineCount = this.LineList.Items.Count;
+                int i = startIndex;
+                if ((e.KeyboardDevice.Modifiers & ModifierKeys.Shift) > 0)
+                {
+                    for (i--; i >= 0; i--)
                     {
-                        this.SearchPanel.Visibility = Visibility.Collapsed;
-                        this.LineList.FocusIndex(this.LineList.SelectedIndex);
+                        if (match(i))
+                        {
+                            break;
+                        }
                     }
                 }
                 else
                 {
-                    string searchText = this.SearchBox.Text;
-                    int startIndex = 0;
-                    if (this.LineList.SelectedIndex >= 0)
+                    for (i++; i < lineCount; i++)
                     {
-                        startIndex = this.LineList.SelectedIndex;
-                    }
-
-                    bool match(int index)
-                    {
-                        return this.ViewModel.Lines[index].OriginalText?.IndexOf(
-                            searchText,
-                            StringComparison.CurrentCultureIgnoreCase
-                        ) >= 0;
-                    }
-                    int lineCount = this.LineList.Items.Count;
-                    int i = startIndex;
-                    if ((e.KeyboardDevice.Modifiers & ModifierKeys.Shift) > 0)
-                    {
-                        for (i--; i >= 0; i--)
+                        if (match(i))
                         {
-                            if (match(i))
-                            {
-                                break;
-                            }
+                            break;
                         }
                     }
-                    else
-                    {
-                        for (i++; i < lineCount; i++)
-                        {
-                            if (match(i))
-                            {
-                                break;
-                            }
-                        }
-                    }
+                }
 
-                    if (i >= 0 && i < lineCount)
-                    {
-                        this.LineList.SelectedIndex = i;
-                        this.LineList.ScrollIntoView(this.LineList.Items[i]);
-                    }
+                if (i >= 0 && i < lineCount)
+                {
+                    this.LineList.SelectedIndex = i;
+                    this.LineList.ScrollIntoView(this.LineList.Items[i]);
                 }
             }
             else if (e.Key == Key.Escape)
             {
-                this.SearchPanel.Visibility = Visibility.Collapsed;
+                this.ExitSearch();
             }
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private void ExitSearch()
         {
+            int i = this.LineList.SelectedIndex;
+            if (i >= 0 && i < this.LineList.Items.Count)
+            {
+                this.LineList.FocusIndex(i);
+            }
+            else if (this.LineList.Items.Count > 0)
+            {
+                this.LineList.FocusIndex(i);
+            }
+
+            this.Editor.Focus();
             this.SearchPanel.Visibility = Visibility.Collapsed;
+        }
+
+        private void ExitSearchButton_Click(object sender, RoutedEventArgs e)
+        {
+            this.ExitSearch();
         }
     }
 }
