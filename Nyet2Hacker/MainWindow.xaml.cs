@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -80,6 +81,7 @@ namespace Nyet2Hacker
         private ReadOnlyCollection<LineViewModel> lines;
         public DelegateCommand DoneCommand { get; }
         private bool canCommit;
+        private bool loaded;
 
         private LineViewModel selectedLine;
         private bool textTooLong;
@@ -94,6 +96,7 @@ namespace Nyet2Hacker
             {
                 if (!(this.SelectedLine is null))
                 {
+                    this.dirty = true;
                     this.SelectedLine.Done = !this.SelectedLine.Done;
                 }
             });
@@ -105,8 +108,15 @@ namespace Nyet2Hacker
                 proj.Lines.Select(l => new LineViewModel(l)).ToList()
             );
 
+            this.Loaded = true;
             this.projectPath = path;
             this.CalcCompletion();
+        }
+
+        public bool Loaded
+        {
+            get => this.loaded;
+            private set => this.Set(ref this.loaded, value);
         }
 
         public int TotalStrings
@@ -154,6 +164,7 @@ namespace Nyet2Hacker
                 return false;
             }
 
+            this.Dirty = true;
             this.SelectedLine.TransText = this.WorkText;
             this.CalcCompletion();
             return true;
@@ -209,7 +220,7 @@ namespace Nyet2Hacker
         public bool Dirty
         {
             get => this.dirty;
-            private set => this.Set(ref this.dirty, value);
+            set => this.Set(ref this.dirty, value);
         }
 
         public int SelectedIndex
@@ -554,15 +565,16 @@ namespace Nyet2Hacker
             }
         }
 
-        private void Save(FileType type)
+        private bool Save(FileType type, bool saveAs = false)
         {
             if (this.project is null)
             {
-                return;
+                return false;
             }
             string path;
             if (this.ViewModel?.ProjectPath is string exPath
-                && type == FileType.Project)
+                && type == FileType.Project
+                && !saveAs)
             {
                 path = exPath;
             }
@@ -578,13 +590,13 @@ namespace Nyet2Hacker
                         dlg.Filter = "Nyet 2 Hacker Files (*.n2h)|*.n2h";
                         break;
                 }
-                if (dlg.ShowDialog(this) == true)
+                this.AllowDrop = false;
+                bool ok = dlg.ShowDialog(this) == true;
+                this.AllowDrop = true;
+                path = dlg.FileName;
+                if (!ok)
                 {
-                    path = dlg.FileName;
-                }
-                else
-                {
-                    return;
+                    return false;
                 }
             }
 
@@ -602,27 +614,37 @@ namespace Nyet2Hacker
                 string message = $"Failed to open file ${path} for writing.";
                 this.LogError(e, message);
                 this.WriteError(message);
-                return;
+                return false;
             }
 
+            bool saved;
             using (fs)
             {
                 switch (type)
                 {
                     case FileType.Ovl:
-                        this.SaveOvl(fs, this.project);
+                        saved = this.SaveOvl(fs, this.project);
                         break;
                     default:
                     case FileType.Project:
                         this.SaveProject(fs, this.project);
+                        this.ViewModel.ProjectPath = path;
+                        saved = true;
                         break;
                 }
             }
+
+            if (saved)
+            {
+                this.ViewModel.Dirty = false;
+            }
+
+            return saved;
         }
 
-        const int ovlArrayLength = 588;
-        const int ovlArrayBase = 0x1CCFC;
-        const int ovlStringBase = 0x1D810;
+        private const int ovlArrayLength = 588;
+        private const int ovlArrayBase = 0x1CCFC;
+        private const int ovlStringBase = 0x1D810;
 
         //if we somehow go beyond this, we're in trouble:
         const int ovlMax = 0x20DFC;
@@ -743,7 +765,8 @@ namespace Nyet2Hacker
 
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
-            if ((e.KeyboardDevice.Modifiers & ModifierKeys.Control) > 0)
+            var mods = e.KeyboardDevice.Modifiers;
+            if ((mods & ModifierKeys.Control) > 0)
             {
                 if (e.Key == Key.E)
                 {
@@ -751,7 +774,10 @@ namespace Nyet2Hacker
                 }
                 else if (e.Key == Key.S)
                 {
-                    this.Save(FileType.Project);
+                    this.Save(
+                        FileType.Project,
+                        saveAs: (mods & ModifierKeys.Shift) > 0
+                    );
                 }
                 else if (e.Key == Key.F)
                 {
@@ -849,6 +875,30 @@ namespace Nyet2Hacker
         private void LineCheckBoxChange(object sender, RoutedEventArgs e)
         {
             this.ViewModel.CalcCompletion();
+        }
+
+        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            this.Save(FileType.Project);
+        }
+
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            if (this.ViewModel?.Dirty == true)
+            {
+                var res = MessageBox.Show(
+                   this,
+                   "There are unsaved changes. Save now?",
+                   "Unsaved changes",
+                   MessageBoxButton.YesNoCancel,
+                   MessageBoxImage.Warning
+               );
+
+                e.Cancel = res == MessageBoxResult.Cancel
+                    || (res == MessageBoxResult.Yes && !this.Save(FileType.Project));
+            }
+
+            base.OnClosing(e);
         }
     }
 }

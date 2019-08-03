@@ -61,12 +61,12 @@
             <ControlTemplate.Resources>
                 <Storyboard x:Key="TheDisabling">
                     <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(local:PathApplicator.Fill).(SolidColorBrush.Color)" Storyboard.TargetName="pathApplicator">
-                        <EasingColorKeyFrame KeyTime="0:0:0.1" Value="#FFC5C5C5"/>
+                        <EasingColorKeyFrame KeyTime="0:0:0.2" Value="#FFC5C5C5"/>
                     </ColorAnimationUsingKeyFrames>
                 </Storyboard>
                 <Storyboard x:Key="TheEnabling">
                     <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(local:PathApplicator.Fill).(SolidColorBrush.Color)" Storyboard.TargetName="pathApplicator">
-                        <EasingColorKeyFrame KeyTime="0:0:0.1" Value="Black"/>
+                        <EasingColorKeyFrame KeyTime="0:0:0.2" Value="Black"/>
                     </ColorAnimationUsingKeyFrames>
                 </Storyboard>
             </ControlTemplate.Resources>
@@ -74,12 +74,11 @@
                 x:Name="grid"
                 Background="#00E8FF00"
                 BorderBrush="#00808080"
-                BorderThickness="2"
             >
                 <VisualStateManager.VisualStateGroups>
                     <VisualStateGroup x:Name="CommonStates">
                         <VisualStateGroup.Transitions>
-                            <VisualTransition GeneratedDuration="0:0:0.01"/>
+                            <VisualTransition GeneratedDuration="0:0:0.05"/>
                         </VisualStateGroup.Transitions>
                         <VisualState x:Name="Normal">
                             <Storyboard>
@@ -127,14 +126,89 @@
                 </Trigger>
             </ControlTemplate.Triggers>
         </ControlTemplate>
+        <ControlTemplate x:Key="SaveButtonTemplate" TargetType="{x:Type local:DirtyButton}">
+            <ControlTemplate.Resources>
+                <Storyboard x:Key="TheEnabling">
+                    <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(local:PathApplicator.Fill).(SolidColorBrush.Color)" Storyboard.TargetName="pathApplicator">
+                        <EasingColorKeyFrame KeyTime="0:0:0.2" Value="Black"/>
+                    </ColorAnimationUsingKeyFrames>
+                </Storyboard>
+                <Storyboard x:Key="TheDisabling">
+                    <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(local:PathApplicator.Fill).(SolidColorBrush.Color)" Storyboard.TargetName="pathApplicator">
+                        <EasingColorKeyFrame KeyTime="0:0:0.2" Value="#FFBBBBBB"/>
+                    </ColorAnimationUsingKeyFrames>
+                </Storyboard>
+            </ControlTemplate.Resources>
+            <Border x:Name="border" Background="Transparent">
+                <VisualStateManager.VisualStateGroups>
+                    <VisualStateGroup x:Name="Dirtyness">
+                        <VisualStateGroup.Transitions>
+                            <VisualTransition GeneratedDuration="0:0:0.05"/>
+                        </VisualStateGroup.Transitions>
+                        <VisualState x:Name="Pressed">
+                            <Storyboard>
+                                <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Panel.Background).(SolidColorBrush.Color)" Storyboard.TargetName="border">
+                                    <EasingColorKeyFrame KeyTime="0" Value="Black"/>
+                                </ColorAnimationUsingKeyFrames>
+                                <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(local:PathApplicator.Fill).(SolidColorBrush.Color)" Storyboard.TargetName="pathApplicator">
+                                    <EasingColorKeyFrame KeyTime="0" Value="White"/>
+                                </ColorAnimationUsingKeyFrames>
+                            </Storyboard>
+                        </VisualState>
+                        <VisualState x:Name="DirtyHover">
+                            <Storyboard>
+                                <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(local:PathApplicator.Fill).(SolidColorBrush.Color)" Storyboard.TargetName="pathApplicator">
+                                    <EasingColorKeyFrame KeyTime="0" Value="#FF830000"/>
+                                </ColorAnimationUsingKeyFrames>
+                                <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Panel.Background).(SolidColorBrush.Color)" Storyboard.TargetName="border">
+                                    <EasingColorKeyFrame KeyTime="0" Value="#FFD8D8D8"/>
+                                </ColorAnimationUsingKeyFrames>
+                            </Storyboard>
+                        </VisualState>
+                        <VisualState x:Name="CleanHover">
+                            <Storyboard>
+                                <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Panel.Background).(SolidColorBrush.Color)" Storyboard.TargetName="border">
+                                    <EasingColorKeyFrame KeyTime="0" Value="#FFD8D8D8"/>
+                                </ColorAnimationUsingKeyFrames>
+                                <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(local:PathApplicator.Fill).(SolidColorBrush.Color)" Storyboard.TargetName="pathApplicator">
+                                    <EasingColorKeyFrame KeyTime="0" Value="Black"/>
+                                </ColorAnimationUsingKeyFrames>
+                            </Storyboard>
+                        </VisualState>
+                        <VisualState x:Name="Dirty">
+                            <Storyboard>
+                                <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(local:PathApplicator.Fill).(SolidColorBrush.Color)" Storyboard.TargetName="pathApplicator">
+                                    <EasingColorKeyFrame KeyTime="0" Value="#FFA80000"/>
+                                </ColorAnimationUsingKeyFrames>
+                            </Storyboard>
+                        </VisualState>
+                        <VisualState x:Name="NotDirty"/>
+                    </VisualStateGroup>
+                </VisualStateManager.VisualStateGroups>
+                <local:PathApplicator x:Name="pathApplicator" Fill="#FFBBBBBB"/>
+            </Border>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsEnabled" Value="True">
+                    <Trigger.ExitActions>
+                        <BeginStoryboard x:Name="TheDisabling_BeginStoryboard" Storyboard="{StaticResource TheDisabling}"/>
+                    </Trigger.ExitActions>
+                    <Trigger.EnterActions>
+                        <BeginStoryboard Storyboard="{StaticResource TheEnabling}"/>
+                    </Trigger.EnterActions>
+                    <Setter Property="Fill" TargetName="pathApplicator" Value="#3F1B1B1B"/>
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
     </Window.Resources>
     <Grid Name="MainGrid">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="146*"/>
+            <ColumnDefinition Width="217*"/>
+            <ColumnDefinition Width="80*"/>
             <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="61*"/>
-            <ColumnDefinition Width="73*"/>
+            <ColumnDefinition Width="35*"/>
+            <ColumnDefinition Width="89*"/>
+            <ColumnDefinition Width="149*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="61*"/>
@@ -165,7 +239,7 @@
             IsReadOnly="True"
             Margin="3, 3, 3, 3"
             FontFamily="Consolas"
-            Grid.ColumnSpan="5"
+            Grid.ColumnSpan="7"
         >
             <FlowDocument>
                 <Paragraph>
@@ -186,7 +260,7 @@
             Name="LineList"
             ItemsSource="{Binding Lines}"
             SelectedIndex="{Binding SelectedIndex}"
-            Grid.ColumnSpan="5"
+            Grid.ColumnSpan="7"
             ItemTemplate="{StaticResource LineTemplate}"
             HorizontalContentAlignment="Stretch"
             FontFamily="Consolas"
@@ -197,7 +271,7 @@
             Grid.Row="1"
             Margin="2, 2, 2, 2"
             HorizontalAlignment="Stretch"
-            Grid.ColumnSpan="5"
+            Grid.ColumnSpan="7"
         >
             <Button
                 Name="ExitSearchButton"
@@ -239,16 +313,15 @@
             KeyDown="TextBox_KeyDown"
             AcceptsReturn="False"
             Text="{Binding WorkText, UpdateSourceTrigger=PropertyChanged}"
-            Height="20"
             Margin="3,7"
-            VerticalContentAlignment="Center"
+            VerticalContentAlignment="Center" Grid.ColumnSpan="2"
         />
         <TextBlock
             Grid.Row="2"
-            Grid.Column="3"
+            Grid.Column="5"
             VerticalAlignment="Center"
             HorizontalAlignment="Right"
-            Margin="0,10,3,9"
+            Margin="5, 5, 5, 5"
             ToolTip="Length of modified text / maximum length"
         >
             <Run Text="{Binding WorkText.Length, Mode=OneWay, FallbackValue=?}"/>
@@ -257,10 +330,10 @@
         </TextBlock>
         <TextBlock
             Grid.Row="2"
-            Grid.Column="4"
+            Grid.Column="6"
             VerticalAlignment="Center"
             HorizontalAlignment="Right"
-            Margin="0,10,3,9"
+            Margin="5, 5, 5, 5"
         >
             <Run
                 Text="{Binding DoneStrings, Mode=OneWay, FallbackValue=0}"/><Run
@@ -284,23 +357,49 @@
         </CheckBox>
         <Button
             Name="CommitButton"
-            Grid.Column="2"
+            Grid.Column="3"
             Grid.Row="2" 
             Template="{DynamicResource ButtonTemplate}"
-            Height="25"
-            Width="25"
             Focusable="False"
             ToolTip="Commit Line (Enter)"
             IsEnabled="{Binding CanCommit}"
             Click="CommitButton_Click"
+            Height="25"
+            Width="25"
         >
             <Path
                 Stretch="Fill"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
-                Margin="2, 2, 2, 2"
+                Margin="4, 4, 4, 4"
                 Data="F1 M107.18669,112.78337 L107.26082,106.39893 108.93101,108.80581 109.55907,107.83096 106.64798,103.76163 103.81357,107.89062 104.43306,108.93297 106.07465,106.3691 106.11172,112.78336 z"
             />
         </Button>
+        <local:DirtyButton
+            x:Name="SaveButton"
+            Grid.Column="4"
+            Dirty="{Binding Dirty}"
+            Grid.Row="2"
+            Width="25" 
+            Height="25"
+            Template="{DynamicResource SaveButtonTemplate}"
+            IsEnabled="{Binding Loaded}"
+            Click="SaveButton_Click"
+        >
+            <Button.ToolTip>
+                <TextBlock>
+                    Save project file (Ctrl-S).
+                    Ctrl-Shift-S is "save as",
+                    Ctrl-E exports back to .ovl.
+                </TextBlock>
+            </Button.ToolTip>
+            <Path
+                Data="F1 M 433.919,130.884L 350.07,47.0354C 341.029,37.9945 328.868,32.954 316.066,32.954L 47.959,32.954C 21.4762,32.954 -0.0459798,54.4762 -0.0459798,80.9589L -0.0459798,432.995C -0.0459798,459.478 21.4762,481 47.959,481L 399.995,481C 426.478,481 448,459.478 448,432.995L 448,164.888C 448,152.086 442.96,139.925 433.919,130.884 Z M 271.982,80.9589L 271.982,160.967L 143.969,160.967L 143.969,80.9589L 271.982,80.9589 Z M 393.994,432.995L 53.9596,432.995C 50.6792,432.995 47.959,430.275 47.959,426.994L 47.959,86.9595C 47.959,83.6792 50.6792,80.9589 53.9596,80.9589L 95.9639,80.9589L 95.9639,184.97C 95.9639,198.251 106.685,208.972 119.966,208.972L 295.984,208.972C 309.266,208.972 319.987,198.251 319.987,184.97L 319.987,84.8793L 398.235,163.127C 399.355,164.247 399.995,165.768 399.995,167.368L 399.995,426.994C 399.995,430.275 397.275,432.995 393.994,432.995 Z M 223.977,232.975C 175.412,232.975 135.968,272.419 135.968,320.984C 135.968,369.549 175.412,408.993 223.977,408.993C 272.542,408.993 311.986,369.549 311.986,320.984C 311.986,272.419 272.542,232.975 223.977,232.975 Z M 223.977,360.988C 201.895,360.988 183.973,343.066 183.973,320.984C 183.973,298.901 201.895,280.979 223.977,280.979C 246.059,280.979 263.981,298.901 263.981,320.984C 263.981,343.066 246.059,360.988 223.977,360.988 Z "
+                x:Name="SaveButtonPath"
+                Stretch="Uniform"
+                Fill="#FF000000"
+                Margin="4, 4, 4, 4"
+            />
+        </local:DirtyButton>
     </Grid>
 </Window>

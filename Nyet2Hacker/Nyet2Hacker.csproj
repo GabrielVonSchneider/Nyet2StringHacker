@@ -61,6 +61,9 @@
     <Compile Include="DelegateCommand.cs" />
     <Compile Include="PathApplicator.cs" />
     <Compile Include="PropertyChangedBase.cs" />
+    <Compile Include="DirtyButton.cs">
+      <Generator>MSBuild:Compile</Generator>
+    </Compile>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
