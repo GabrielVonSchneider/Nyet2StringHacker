@@ -43,6 +43,8 @@
                     IsChecked="{Binding Done}"
                     VerticalAlignment="Center" Grid.ColumnSpan="1" Margin="0,2"
                     Focusable="False"
+                    Checked="LineCheckBoxChange"
+                    Unchecked="LineCheckBoxChange"
                 />
                 <TextBlock
                     Grid.Column="2"

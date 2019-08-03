@@ -75,10 +75,11 @@ namespace Nyet2Hacker
     {
         private string projectPath;
         private bool dirty;
-        private int selectedIndex;
+        private int selectedIndex = -1;
         private string workText;
         private ReadOnlyCollection<LineViewModel> lines;
         public DelegateCommand DoneCommand { get; }
+        private bool canCommit;
 
         private LineViewModel selectedLine;
         private bool textTooLong;
@@ -158,7 +159,7 @@ namespace Nyet2Hacker
             return true;
         }
 
-        private void CalcCompletion()
+        public void CalcCompletion()
         {
             this.TotalStrings = this.lines.Count;
             this.DoneStrings = this.lines.Where(l => l.Done).Count();
@@ -838,6 +839,16 @@ namespace Nyet2Hacker
         private void ExitSearchButton_Click(object sender, RoutedEventArgs e)
         {
             this.ExitSearch();
+        }
+
+        private void CommitButton_Click(object sender, RoutedEventArgs e)
+        {
+            this.Commit();
+        }
+
+        private void LineCheckBoxChange(object sender, RoutedEventArgs e)
+        {
+            this.ViewModel.CalcCompletion();
         }
     }
 }
