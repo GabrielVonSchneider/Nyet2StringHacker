@@ -11,6 +11,7 @@
         Drop="Window_Drop"
         KeyDown="Window_KeyDown"
         Focusable="False"
+        d:DataContext="{d:DesignInstance Type=local:MainWindowViewModel}"
     >
     <Window.InputBindings>
         <KeyBinding Key="D" Modifiers="Ctrl" Command="{Binding DoneCommand}"/>
@@ -54,82 +55,84 @@
                 />
             </Grid>
         </DataTemplate>
-        <ControlTemplate x:Key="XButton" TargetType="{x:Type Button}">
-            <Grid x:Name="grid" Background="#00FFFF00">
+        <ControlTemplate x:Key="ButtonTemplate" TargetType="{x:Type Button}">
+            <ControlTemplate.Resources>
+                <Storyboard x:Key="TheDisabling">
+                    <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(local:PathApplicator.Fill).(SolidColorBrush.Color)" Storyboard.TargetName="pathApplicator">
+                        <EasingColorKeyFrame KeyTime="0:0:0.1" Value="#FFC5C5C5"/>
+                    </ColorAnimationUsingKeyFrames>
+                </Storyboard>
+                <Storyboard x:Key="TheEnabling">
+                    <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(local:PathApplicator.Fill).(SolidColorBrush.Color)" Storyboard.TargetName="pathApplicator">
+                        <EasingColorKeyFrame KeyTime="0:0:0.1" Value="Black"/>
+                    </ColorAnimationUsingKeyFrames>
+                </Storyboard>
+            </ControlTemplate.Resources>
+            <Border
+                x:Name="grid"
+                Background="#00E8FF00"
+                BorderBrush="#00808080"
+                BorderThickness="2"
+            >
                 <VisualStateManager.VisualStateGroups>
                     <VisualStateGroup x:Name="CommonStates">
-                        <VisualState x:Name="Normal"/>
+                        <VisualStateGroup.Transitions>
+                            <VisualTransition GeneratedDuration="0:0:0.01"/>
+                        </VisualStateGroup.Transitions>
+                        <VisualState x:Name="Normal">
+                            <Storyboard>
+                            </Storyboard>
+                        </VisualState>
                         <VisualState x:Name="MouseOver">
                             <Storyboard>
                                 <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Panel.Background).(SolidColorBrush.Color)" Storyboard.TargetName="grid">
-                                    <EasingColorKeyFrame KeyTime="0" Value="#7EFFFF00"/>
+                                    <EasingColorKeyFrame KeyTime="0" Value="#7E9C9C9C"/>
                                 </ColorAnimationUsingKeyFrames>
                             </Storyboard>
                         </VisualState>
                         <VisualState x:Name="Pressed">
                             <Storyboard>
                                 <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Panel.Background).(SolidColorBrush.Color)" Storyboard.TargetName="grid">
-                                    <EasingColorKeyFrame KeyTime="0" Value="Yellow"/>
+                                    <EasingColorKeyFrame KeyTime="0" Value="Black"/>
                                 </ColorAnimationUsingKeyFrames>
-                                <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Shape.Stroke).(SolidColorBrush.Color)" Storyboard.TargetName="path">
-                                    <EasingColorKeyFrame KeyTime="0" Value="White"/>
-                                </ColorAnimationUsingKeyFrames>
-                                <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Shape.Stroke).(SolidColorBrush.Color)" Storyboard.TargetName="path1">
+                                <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(local:PathApplicator.Fill).(SolidColorBrush.Color)" Storyboard.TargetName="pathApplicator">
                                     <EasingColorKeyFrame KeyTime="0" Value="White"/>
                                 </ColorAnimationUsingKeyFrames>
                             </Storyboard>
                         </VisualState>
-                        <VisualState x:Name="Disabled"/>
                     </VisualStateGroup>
                     <VisualStateGroup x:Name="FocusStates">
-                        <VisualState x:Name="Unfocused">
-                            <Storyboard>
-                                <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Shape.Stroke).(SolidColorBrush.Color)" Storyboard.TargetName="rectangle">
-                                    <EasingColorKeyFrame KeyTime="0" Value="#00808080"/>
-                                </ColorAnimationUsingKeyFrames>
-                            </Storyboard>
-                        </VisualState>
                         <VisualState x:Name="Focused">
                             <Storyboard>
-                                <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(UIElement.Opacity)" Storyboard.TargetName="rectangle">
-                                    <EasingDoubleKeyFrame KeyTime="0" Value="1"/>
-                                </DoubleAnimationUsingKeyFrames>
-                                <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Shape.Stroke).(SolidColorBrush.Color)" Storyboard.TargetName="rectangle">
-                                    <EasingColorKeyFrame KeyTime="0" Value="Gray"/>
+                                <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" Storyboard.TargetName="grid">
+                                    <EasingColorKeyFrame KeyTime="0" Value="#FF80808B"/>
                                 </ColorAnimationUsingKeyFrames>
                             </Storyboard>
                         </VisualState>
+                        <VisualState x:Name="NotFocused"/>
                     </VisualStateGroup>
                 </VisualStateManager.VisualStateGroups>
-                <Rectangle x:Name="rectangle" StrokeThickness="1" Stroke="Gray"/>
-                <Path x:Name="path" 
-                    Data="M2.2893762,7.7898527 L8.8494546,2.2097653"
-                    Fill="#FFF4F4F5"
-                    HorizontalAlignment="Left"
-                    Stretch="Fill"
-                    Stroke="Black"
-                    VerticalAlignment="Top"
-                    StrokeThickness="2.5"
-                    Margin="1, 1, 1, 1"
-                />
-                <Path x:Name="path1"
-                    Data="M3.4311521,2.5120821 L9.8964935,7.9624157"
-                    Fill="#FFF4F4F5" HorizontalAlignment="Left"
-                    Stretch="Fill"
-                    Stroke="Black"
-                    VerticalAlignment="Top"
-                    StrokeThickness="2.5"
-                    Margin="1, 1, 1, 1"
-                />
-            </Grid>
+                <local:PathApplicator x:Name="pathApplicator" Fill="#FFC5C5C5"/>
+            </Border>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Trigger.ExitActions>
+                        <BeginStoryboard x:Name="TheEnabling_BeginStoryboard" Storyboard="{StaticResource TheEnabling}"/>
+                    </Trigger.ExitActions>
+                    <Trigger.EnterActions>
+                        <BeginStoryboard x:Name="TheDisabling_BeginStoryboard" Storyboard="{StaticResource TheDisabling}"/>
+                    </Trigger.EnterActions>
+                </Trigger>
+            </ControlTemplate.Triggers>
         </ControlTemplate>
     </Window.Resources>
     <Grid Name="MainGrid">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="150*"/>
-            <ColumnDefinition Width="75*"/>
-            <ColumnDefinition Width="75*"/>
+            <ColumnDefinition Width="146*"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="61*"/>
+            <ColumnDefinition Width="73*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="61*"/>
@@ -155,12 +158,12 @@
             <Button>Cancel</Button>
         </DockPanel>
         <RichTextBox 
-            x:Name="output"
+            x:Name="Output"
             Grid.Row="3"
             IsReadOnly="True"
             Margin="3, 3, 3, 3"
             FontFamily="Consolas"
-            Grid.ColumnSpan="4"
+            Grid.ColumnSpan="5"
         >
             <FlowDocument>
                 <Paragraph>
@@ -181,7 +184,7 @@
             Name="LineList"
             ItemsSource="{Binding Lines}"
             SelectedIndex="{Binding SelectedIndex}"
-            Grid.ColumnSpan="4"
+            Grid.ColumnSpan="5"
             ItemTemplate="{StaticResource LineTemplate}"
             HorizontalContentAlignment="Stretch"
             FontFamily="Consolas"
@@ -192,23 +195,31 @@
             Grid.Row="1"
             Margin="2, 2, 2, 2"
             HorizontalAlignment="Stretch"
-            Grid.ColumnSpan="4"
+            Grid.ColumnSpan="5"
         >
             <Button
                 Name="ExitSearchButton"
                 FocusVisualStyle="{x:Null}"
-                Height="15"
-                Width="15"
+                Height="20"
+                Width="20"
                 HorizontalContentAlignment="Center"
                 VerticalContentAlignment="Center"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
-                Template="{DynamicResource XButton}"
+                Template="{StaticResource ButtonTemplate}"
                 Margin="1, 1, 1, 1"
                 Click="ExitSearchButton_Click"
                 ToolTip="Close Search Bar (Esc)"
-                Focusable="True"
-            />
+                Focusable="False"
+            >
+                <Path 
+                    Stretch="Fill"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    Data="M-2.8333333,-1.7 L-1.5836666,-3.1166667 3.7042816,1.6270601 8.7459862,-3.3666376 10.328816,-2.1164062 5.8000221,3.4437972 10.32915,8.3827363 8.9961736,9.8826138 3.8090686,5.2605342 -1.5840637,10.049267 -3.0835891,9.132675 1.6434701,3.5136717"
+                    Margin="2, 2, 2, 2"
+                />
+            </Button>
             <TextBox
                 Name="SearchBox"
                 HorizontalAlignment="Stretch"
@@ -227,32 +238,34 @@
             AcceptsReturn="False"
             Text="{Binding WorkText, UpdateSourceTrigger=PropertyChanged}"
             Height="20"
-            Margin="3, 3, 3, 3"
+            Margin="3,7"
+            VerticalContentAlignment="Center"
         />
-        <TextBlock
-            Grid.Row="2"
-            Grid.Column="2"
-            VerticalAlignment="Center"
-            HorizontalAlignment="Right"
-            Margin="0,7,4,6"
-        >
-            <Run Text="{Binding WorkText.Length, Mode=OneWay}"/>
-            <Run Text="/"/>
-            <Run Text="{Binding SelectedLine.OriginalText.Length, Mode=OneWay}"/>
-        </TextBlock>
         <TextBlock
             Grid.Row="2"
             Grid.Column="3"
             VerticalAlignment="Center"
             HorizontalAlignment="Right"
-            Margin="0,7,4,6"
+            Margin="0,10,3,9"
+            ToolTip="Length of modified text / maximum length"
         >
-            <Run Text="{Binding DoneStrings, Mode=OneWay}"/>
-            <Run Text="out of"/>
-            <Run Text="{Binding TotalStrings, Mode=OneWay}"/>
-            <Run Text="-"/>
-            <Run Text="{Binding CompletionPercent, Mode=OneWay}"/>
-            <Run Text="percent"/>
+            <Run Text="{Binding WorkText.Length, Mode=OneWay, FallbackValue=?}"/>
+            <Run Text="/"/>
+            <Run Text="{Binding SelectedLine.OriginalText.Length, Mode=OneWay, FallbackValue=?}"/>
+        </TextBlock>
+        <TextBlock
+            Grid.Row="2"
+            Grid.Column="4"
+            VerticalAlignment="Center"
+            HorizontalAlignment="Right"
+            Margin="0,10,3,9"
+        >
+            <Run
+                Text="{Binding DoneStrings, Mode=OneWay, FallbackValue=0}"/><Run
+                Text=" out of "/><Run
+                Text="{Binding TotalStrings, Mode=OneWay, FallbackValue=0}"/><Run
+                Text=" - "/><Run Text="{Binding CompletionPercent, Mode=OneWay, FallbackValue=?}"/><Run
+                Text="%"/>
         </TextBlock>
         <CheckBox
             VerticalContentAlignment="Center"
@@ -267,5 +280,25 @@
                 (Ctrl-D)
             </TextBlock>
         </CheckBox>
+        <Button
+            Name="CommitButton"
+            Grid.Column="2"
+            Grid.Row="2" 
+            Template="{DynamicResource ButtonTemplate}"
+            Height="25"
+            Width="25"
+            Focusable="False"
+            ToolTip="Commit Line (Enter)"
+            IsEnabled="{Binding CanCommit}"
+            Click="CommitButton_Click"
+        >
+            <Path
+                Stretch="Fill"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                Margin="2, 2, 2, 2"
+                Data="F1 M107.18669,112.78337 L107.26082,106.39893 108.93101,108.80581 109.55907,107.83096 106.64798,103.76163 103.81357,107.89062 104.43306,108.93297 106.07465,106.3691 106.11172,112.78336 z"
+            />
+        </Button>
     </Grid>
 </Window>

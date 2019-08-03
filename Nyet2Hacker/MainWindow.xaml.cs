@@ -129,7 +129,21 @@ namespace Nyet2Hacker
         public bool TextTooLong
         {
             get => this.textTooLong;
-            private set => this.Set(ref this.textTooLong, value);
+            private set => this.Set(
+                v =>
+                {
+                    this.textTooLong = value;
+                    this.Notify(nameof(CanCommit));
+                },
+                value,
+                this.textTooLong
+            );
+        }
+
+        public bool CanCommit
+        {
+            get => this.canCommit;
+            private set => this.Set(ref this.canCommit, value);
         }
 
         public bool Commit()
@@ -168,6 +182,7 @@ namespace Nyet2Hacker
             var v = this.selectedLine;
             this.TextTooLong = !(v is null)
                 && v.OriginalText?.Length < this.WorkText?.Length;
+            this.CanCommit = !(v is null) && !this.textTooLong;
         }
 
         public LineViewModel SelectedLine
@@ -267,7 +282,7 @@ namespace Nyet2Hacker
                 Foreground = new SolidColorBrush(Colors.Red)
             };
 
-            this.output.Document.Blocks.Add(p);
+            this.Output.Document.Blocks.Add(p);
         }
 
         private void LogError(Exception e, string message)
@@ -325,7 +340,7 @@ namespace Nyet2Hacker
 
         private void WriteNeutral(string t)
         {
-            this.output.Document.Blocks.Add(new Paragraph(new Run(t)));
+            this.Output.Document.Blocks.Add(new Paragraph(new Run(t)));
         }
 
         private static bool GetFileType(string filePath, out FileType t)
@@ -476,7 +491,7 @@ namespace Nyet2Hacker
             this.project = projFile;
 
             var gen = this.LineList.ItemContainerGenerator;
-            void statusChanged (object sender, EventArgs args)
+            void statusChanged(object sender, EventArgs args)
             {
                 if (gen.Status == GeneratorStatus.ContainersGenerated)
                 {
@@ -490,25 +505,25 @@ namespace Nyet2Hacker
             }
         }
 
+        private void Commit()
+        {
+            if (this.ViewModel.Commit())
+            {
+                int i = this.LineList.SelectedIndex;
+                if (i < 0)
+                {
+                    return;
+                }
+
+                this.LineList.FocusIndex(i);
+            }
+        }
+
         private void TextBox_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
             {
-                if (this.ViewModel.Commit())
-                {
-                    int i = this.LineList.SelectedIndex;
-                    if (i < 0)
-                    {
-                        return;
-                    }
-
-                    //if (i < this.LineList.Items.Count - 1)
-                    //{
-                    //    i++;
-                    //}
-
-                    this.LineList.FocusIndex(i);
-                }
+                this.Commit();
             }
         }
 
