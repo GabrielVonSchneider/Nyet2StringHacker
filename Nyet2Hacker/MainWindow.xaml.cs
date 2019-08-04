@@ -279,7 +279,7 @@ namespace Nyet2Hacker
 
         public MainWindow()
         {
-            InitializeComponent();
+            this.InitializeComponent();
             this.DataContext = new MainWindowViewModel();
             this.SearchPanel.Visibility = Visibility.Collapsed;
         }
