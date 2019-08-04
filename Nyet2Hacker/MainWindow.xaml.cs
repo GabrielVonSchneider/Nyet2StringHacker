@@ -144,7 +144,7 @@ namespace Nyet2Hacker
                 v =>
                 {
                     this.textTooLong = value;
-                    this.Notify(nameof(CanCommit));
+                    this.Notify(nameof(this.CanCommit));
                 },
                 value,
                 this.textTooLong
@@ -256,14 +256,14 @@ namespace Nyet2Hacker
         {
             get => this.workText;
             set => this.Set(
-            value,
-            v =>
-            {
-                this.workText = v;
-                this.Validate();
-            },
-            () => this.workText
-        );
+                value,
+                v =>
+                {
+                    this.workText = v;
+                    this.Validate();
+                },
+                () => this.workText
+            );
         }
 
         public ReadOnlyCollection<LineViewModel> Lines
@@ -287,11 +287,51 @@ namespace Nyet2Hacker
         private MainWindowViewModel ViewModel =>
             (MainWindowViewModel)this.DataContext;
 
+        private class PendProject
+        {
+            public PendProject(string fileName, ProjectFile proj)
+            {
+                this.Name = fileName;
+                this.File = proj;
+            }
+
+            public string Name { get;}
+            public ProjectFile File { get; }
+        }
+        private ProjectFile project;
+        private PendProject pendingProject;
+
+        private void WriteLine(string text)
+        {
+            Paragraph p;
+            if (this.Output.Document.Blocks.LastBlock is Paragraph fp)
+            {
+                p = fp;
+            }
+            else
+            {
+                p = new Paragraph();
+                this.Output.Document.Blocks.Add(p);
+            }
+
+            if (!(p.Inlines.LastInline is LineBreak))
+            {
+                p.Inlines.Add(new LineBreak());
+            }
+
+            p.Inlines.Add(new Run(text));
+        }
+
         private void WriteError(string error)
         {
-            var p = new Paragraph(new Run(error))
+            this.WriteP(error, Colors.Red);
+        }
+
+        private void WriteP(string text, Color color)
+        {
+            var p = new Paragraph(new Run(text))
             {
-                Foreground = new SolidColorBrush(Colors.Red)
+                Foreground = new SolidColorBrush(color)
             };
 
             this.Output.Document.Blocks.Add(p);
@@ -350,12 +390,7 @@ namespace Nyet2Hacker
             this.WriteError(message);
         }
 
-        private void WriteNeutral(string t)
-        {
-            this.Output.Document.Blocks.Add(new Paragraph(new Run(t)));
-        }
-
-        private static bool GetFileType(string filePath, out FileType t)
+        private bool GetFileType(string filePath, out FileType t)
         {
             t = default;
             if (string.IsNullOrEmpty(filePath))
@@ -371,7 +406,7 @@ namespace Nyet2Hacker
                     return true;
                 case projectExtension:
                     t = FileType.Project;
-                    return true;
+                    return this.pendingProject is null;
                 default:
                     return false;
             }
@@ -379,6 +414,7 @@ namespace Nyet2Hacker
 
         private void Window_DragEnter(object sender, DragEventArgs e)
         {
+            e.Handled = true;
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
                 var files = (string[])e.Data.GetData(DataFormats.FileDrop);
@@ -388,7 +424,7 @@ namespace Nyet2Hacker
                 }
                 else if (files.Length == 1)
                 {
-                    if (GetFileType(files[0], out _))
+                    if (this.GetFileType(files[0], out _))
                     {
                         e.Effects = DragDropEffects.Copy;
                     }
@@ -398,12 +434,20 @@ namespace Nyet2Hacker
 
         private void Window_Drop(object sender, DragEventArgs e)
         {
+            e.Handled = true;
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
                 var files = (string[])e.Data.GetData(DataFormats.FileDrop);
-                if (files.Length == 1 && GetFileType(files[0], out var t))
+                if (files.Length == 1 && this.GetFileType(files[0], out var t))
                 {
-                    this.LoadFile(files[0], t);
+                    if (this.pendingProject is null)
+                    {
+                        this.LoadFile(files[0], t);
+                    }
+                    else
+                    {
+                        this.LoadOffsets(files[0]);
+                    }
                 }
             }
         }
@@ -449,8 +493,6 @@ namespace Nyet2Hacker
                 {
                     proj = s.Deserialize<ProjectFile>(jsonReader);
                 }
-
-                return true;
             }
             catch (Exception e)
             {
@@ -460,6 +502,31 @@ namespace Nyet2Hacker
                 proj = default;
                 return false;
             }
+
+            if (proj.Lines.Count <= 5)
+            {
+                return false;
+            }
+
+            if (proj.Lines[5].Offset == 0)
+            {
+                this.WriteP(
+                    "This is an old project file without offsets.",
+                    Colors.DarkOrange
+                );
+                this.WriteLine("Please drag the original .ovl on the window, so they can be loaded.");
+                this.EnterPrompt(new PendProject(fs.Name, proj));
+                return false;
+            }
+
+            return true;
+        }
+
+        private void Enable(bool enable)
+        {
+            this.LineList.IsEnabled = enable;
+            this.EditPanel.IsEnabled = enable;
+            this.SearchPanel.IsEnabled = enable;
         }
 
         private void LoadFile(string fileName, FileType type)
@@ -499,6 +566,12 @@ namespace Nyet2Hacker
                 return;
             }
 
+            this.Load(fileName, projFile);
+        }
+
+        private void Load(string fileName, ProjectFile projFile)
+        {
+            projFile.Lines = projFile.Lines.OrderBy(l => l.Offset).ToList();
             this.ViewModel.Load(projFile, fileName);
             this.project = projFile;
 
@@ -648,20 +721,69 @@ namespace Nyet2Hacker
 
         //if we somehow go beyond this, we're in trouble:
         const int ovlMax = 0x20DFC;
-        private void ovlEof()
+        private void OvlEof()
         {
             this.WriteError("Encountered end of file while reading .ovl.");
         }
 
         static readonly Encoding ovlEncoding = Encoding.GetEncoding(437);
-        private ProjectFile project;
+
+        private void LoadOffsets(string filename)
+        {
+            var pp = this.pendingProject;
+            FileStream fs;
+            try
+            {
+                fs = File.OpenRead(filename);
+            }
+            catch(Exception e)
+            {
+                string message = $"Unable to open file \"{filename}\" to import offsets.";
+                this.LogError(e, message);
+                this.WriteError(message);
+                return;
+            }
+
+            if (fs.Length < ovlMax)
+            {
+                this.OvlEof();
+            }
+
+            int lineCount = pp.File.Lines.Count < ovlArrayLength
+                ? pp.File.Lines.Count
+                : ovlArrayLength;
+
+            //Calculate a checksum over the table.
+            //The length bytes should match.
+            int oldChecksum = pp.File.Lines.Sum(l => l.OriginalText.Length);
+            int newChecksum = 0;
+            fs.Seek(ovlArrayBase, SeekOrigin.Begin);
+            var buffer = new byte[2];
+            for (int i = 0; i < lineCount; i++)
+            {
+                newChecksum += fs.ReadByte();
+                fs.Position += 1;
+                fs.Read(buffer, 0, 2);
+                int offset = ParseLittleEndInt16(buffer, 0);
+            }
+
+            if (!(newChecksum == oldChecksum))
+            {
+                this.WriteError("The checksums for the .ovl and the .n2h don't match.");
+                this.WriteLine("This probably means that the .n2h was generated from a different file.");
+                return;
+            }
+
+            this.ExitPrompt();
+            this.Load(pp.Name, pp.File);
+        }
 
         private bool LoadOvl(FileStream fs, out ProjectFile proj)
         {
             proj = null;
             if (fs.Length < 0x20DFC)
             {
-                ovlEof();
+                this.OvlEof();
                 return false;
             }
 
@@ -676,7 +798,7 @@ namespace Nyet2Hacker
                 fs.Seek(posForArr, SeekOrigin.Begin);
                 if (fs.Read(buffer, 0, 4) != 4)
                 {
-                    ovlEof();
+                    this.OvlEof();
                     return false;
                 }
 
@@ -685,7 +807,7 @@ namespace Nyet2Hacker
                 int strLoc = offset + ovlStringBase;
                 if (strLoc + strLen > ovlMax)
                 {
-                    ovlEof();
+                    this.OvlEof();
                     return false;
                 }
 
@@ -713,7 +835,8 @@ namespace Nyet2Hacker
                 {
                     Done = false,
                     Index = i,
-                    OriginalText = text
+                    OriginalText = text,
+                    Offset = offset
                 });
             }
 
@@ -735,7 +858,7 @@ namespace Nyet2Hacker
         {
             if (fs.Length < 0x20DFC)
             {
-                ovlEof();
+                this.OvlEof();
                 return false;
             }
 
@@ -894,11 +1017,33 @@ namespace Nyet2Hacker
                    MessageBoxImage.Warning
                );
 
-                e.Cancel = res == MessageBoxResult.Cancel
-                    || (res == MessageBoxResult.Yes && !this.Save(FileType.Project));
+                e.Cancel = res == MessageBoxResult.Cancel || (
+                    res == MessageBoxResult.Yes
+                    && !this.Save(FileType.Project)
+                );
             }
 
             base.OnClosing(e);
+        }
+
+        private void EnterPrompt(PendProject pendProj)
+        {
+            this.QuestionPanel.Visibility = Visibility.Visible;
+            this.Enable(false);
+            this.pendingProject = pendProj;
+        }
+
+        private void ExitPrompt()
+        {
+            this.QuestionPanel.Visibility = Visibility.Collapsed;
+            this.Enable(true);
+            this.pendingProject = null;
+        }
+
+        private void NoButton_Click(object sender, RoutedEventArgs e)
+        {
+            e.Handled = true;
+            this.ExitPrompt();
         }
     }
 }

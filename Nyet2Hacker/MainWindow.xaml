@@ -17,6 +17,9 @@
         <KeyBinding Key="D" Modifiers="Ctrl" Command="{Binding DoneCommand}"/>
     </Window.InputBindings>
     <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Focusable" Value="False"/>
+        </Style>
         <Style TargetType="CheckBox">
             <Setter Property="Margin" Value="5, 0, 5, 0"/>
         </Style>
@@ -61,7 +64,9 @@
             <Border
                 x:Name="grid"
                 Background="#00E8FF00"
-                BorderBrush="#00808080"
+                BorderThickness="{TemplateBinding BorderThickness}"
+                BorderBrush="{TemplateBinding BorderBrush}"
+                Padding="{TemplateBinding Padding}"
             >
                 <VisualStateManager.VisualStateGroups>
                     <VisualStateGroup x:Name="CommonStates">
@@ -91,13 +96,6 @@
                         </VisualState>
                     </VisualStateGroup>
                     <VisualStateGroup x:Name="FocusStates">
-                        <VisualState x:Name="Focused">
-                            <Storyboard>
-                                <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" Storyboard.TargetName="grid">
-                                    <EasingColorKeyFrame KeyTime="0" Value="#FF80808B"/>
-                                </ColorAnimationUsingKeyFrames>
-                            </Storyboard>
-                        </VisualState>
                         <VisualState x:Name="NotFocused"/>
                     </VisualStateGroup>
                 </VisualStateManager.VisualStateGroups>
@@ -168,37 +166,47 @@
         </ControlTemplate>
     </Window.Resources>
     <Grid Name="MainGrid">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="215*"/>
-            <ColumnDefinition Width="79*"/>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="88*"/>
-            <ColumnDefinition Width="147*"/>
-        </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="61*"/>
+            <RowDefinition/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="133"/>
+            <RowDefinition Height="118"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <DockPanel
             Name="QuestionPanel"
-            Grid.Row="3"
-            HorizontalAlignment="Left"
+            Grid.Row="4"
+            Grid.ColumnSpan="7"
+            HorizontalAlignment="Stretch"
             Visibility="Collapsed"
-            Width="0">
+        >
             <DockPanel.Resources>
                 <Style TargetType="Button">
-                    <Setter Property="Width" Value="80"/>
+                    <Setter Property="Width" Value="150"/>
                     <Setter Property="Height" Value="25"/>
                     <Setter Property="Margin" Value="3, 3, 3, 3"/>
+                    <Setter Property="HorizontalAlignment" Value="Left"/>
+                    <Setter Property="VerticalAlignment" Value="Center"/>
+                    <Setter Property="Template" Value="{DynamicResource ButtonTemplate}"/>
+                </Style>
+                <Style TargetType="TextBlock">
+                    <Setter Property="TextAlignment" Value="Center"/>
+                    <Setter Property="VerticalAlignment" Value="Center"/>
+                    <Setter Property="FontSize" Value="15"/>
                 </Style>
             </DockPanel.Resources>
-            <Button Visibility="Collapsed">Yes</Button>
-            <Button Visibility="Collapsed">No</Button>
-            <Button>Cancel</Button>
+            <Button
+                Name="NoButton"
+                Visibility="Visible"
+                Click="NoButton_Click"
+                BorderBrush="Black"
+                BorderThickness="2"
+                Padding="2, 2, 2, 2"
+            >
+                <TextBlock>
+                    Do not load project
+                </TextBlock>
+            </Button>
         </DockPanel>
         <RichTextBox 
             x:Name="Output"
@@ -206,7 +214,6 @@
             IsReadOnly="True"
             Margin="3, 3, 3, 3"
             FontFamily="Consolas"
-            Grid.ColumnSpan="7"
         >
             <FlowDocument>
                 <Paragraph>
@@ -227,7 +234,6 @@
             Name="LineList"
             ItemsSource="{Binding Lines}"
             SelectedIndex="{Binding SelectedIndex}"
-            Grid.ColumnSpan="7"
             ItemTemplate="{StaticResource LineTemplate}"
             HorizontalContentAlignment="Stretch"
             FontFamily="Consolas"
@@ -238,7 +244,6 @@
             Grid.Row="1"
             Margin="2, 2, 2, 2"
             HorizontalAlignment="Stretch"
-            Grid.ColumnSpan="7"
         >
             <Button
                 Name="ExitSearchButton"
@@ -254,6 +259,8 @@
                 Click="ExitSearchButton_Click"
                 ToolTip="Close Search Bar (Esc)"
                 Focusable="False"
+                BorderThickness="0"
+                Padding="0"
             >
                 <Path
                     x:Name="ExitSearchButtonPath"
@@ -273,101 +280,111 @@
                 VerticalContentAlignment="Center"
             />
         </DockPanel>
-        <TextBox
-            Name="Editor"
+        <DockPanel
             Grid.Row="2"
-            Grid.Column="1"
-            KeyDown="TextBox_KeyDown"
-            AcceptsReturn="False"
-            Text="{Binding WorkText, UpdateSourceTrigger=PropertyChanged}"
-            Margin="3,0,3,0"
-            Grid.ColumnSpan="2"
-            Height="20"
-            VerticalAlignment="Center"
-            VerticalContentAlignment="Center"
-        />
-        <TextBlock
-            Grid.Row="2"
-            Grid.Column="5"
-            VerticalAlignment="Center"
-            HorizontalAlignment="Right"
-            Margin="5, 5, 5, 5"
-            ToolTip="Length of modified text / maximum length"
+            Name="EditPanel"
         >
-            <Run Text="{Binding WorkText.Length, Mode=OneWay, FallbackValue=?}"/>
-            <Run Text="/"/>
-            <Run Text="{Binding SelectedLine.OriginalText.Length, Mode=OneWay, FallbackValue=?}"/>
-        </TextBlock>
-        <TextBlock
-            Grid.Row="2"
-            Grid.Column="6"
-            VerticalAlignment="Center"
-            HorizontalAlignment="Right"
-            Margin="5, 5, 5, 5"
-        >
-            <Run
-                Text="{Binding DoneStrings, Mode=OneWay, FallbackValue=0}"/><Run
-                Text=" out of "/><Run
-                Text="{Binding TotalStrings, Mode=OneWay, FallbackValue=0}"/><Run
-                Text=" - "/><Run Text="{Binding CompletionPercent, Mode=OneWay, FallbackValue=?}"/><Run
-                Text="%"/>
-        </TextBlock>
-        <CheckBox
-            VerticalContentAlignment="Center"
-            Grid.Row="2"
-            Grid.Column="0"
-            IsChecked="{Binding SelectedLine.Done}"
-            Margin="3, 3, 3, 3"
-        >
-            <TextBlock Focusable="False">
+            <CheckBox
+                VerticalContentAlignment="Center"
+                Grid.Row="2"
+                Grid.Column="0"
+                IsChecked="{Binding SelectedLine.Done}"
+                Margin="3, 3, 3, 3"
+            >
+                <TextBlock Focusable="False">
                 Is Edited
                 <LineBreak/>
                 (Ctrl-D)
-            </TextBlock>
-        </CheckBox>
-        <Button
-            Name="CommitButton"
-            Grid.Column="3"
-            Grid.Row="2" 
-            Template="{DynamicResource ButtonTemplate}"
-            Focusable="False"
-            ToolTip="Commit Line (Enter)"
-            IsEnabled="{Binding CanCommit}"
-            Click="CommitButton_Click"
-            Height="20"
-            Width="20"
-        >
-            <Path
+                </TextBlock>
+            </CheckBox>
+            <TextBox
+                Name="Editor"
+                Grid.Row="2"
+                Grid.Column="1"
+                KeyDown="TextBox_KeyDown"
+                AcceptsReturn="False"
+                Text="{Binding WorkText, UpdateSourceTrigger=PropertyChanged}"
+                Margin="3,7.15"
+                Grid.ColumnSpan="2"
+                Height="20"
+                VerticalAlignment="Center"
+                VerticalContentAlignment="Center" Width="250.964"
+            />
+            <Button
+                Name="CommitButton"
+                Grid.Column="3"
+                Grid.Row="2" 
+                Template="{DynamicResource ButtonTemplate}"
+                Focusable="False"
+                ToolTip="Commit Line (Enter)"
+                IsEnabled="{Binding CanCommit}"
+                Click="CommitButton_Click"
+                Height="20"
+                Width="20"
+                Margin="0,7.15,-0.001,7.15"
+                BorderThickness="0"
+                Padding="0"
+            >
+                <Path
                 x:Name="UpArrow"
                 Stretch="Uniform"
                 Margin="3, 3, 3, 3"
                 Data="F1 M 29.263,292.526L 7.02072,270.364C -2.34024,260.923 -2.34024,245.722 7.02072,236.441L 201.361,42.0207C 210.722,32.6598 225.923,32.6598 235.284,42.0207L 429.544,236.361C 438.985,245.722 438.985,260.923 429.544,270.284L 407.382,292.446C 397.861,301.967 382.339,301.727 373.058,292.046L 258.327,171.634L 258.327,459.104C 258.327,472.385 247.685,483.106 234.324,483.106L 202.321,483.106C 189.039,483.106 178.318,472.385 178.318,459.104L 178.318,171.634L 63.5065,292.126C 54.2256,301.967 38.704,302.127 29.263,292.526 Z "
             />
-        </Button>
-        <local:DirtyButton
-            x:Name="SaveButton"
-            Grid.Column="4"
-            Dirty="{Binding Dirty}"
-            Grid.Row="2"
-            Width="20" 
-            Height="20"
-            Template="{DynamicResource SaveButtonTemplate}"
-            IsEnabled="{Binding Loaded}"
-            Click="SaveButton_Click"
-        >
-            <Button.ToolTip>
-                <TextBlock>
+            </Button>
+            <TextBlock
+                Grid.Row="2"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Right"
+                Margin="10, 0, 0, 0"
+                ToolTip="Length of modified text / maximum length"
+            >
+                <Run Text="{Binding WorkText.Length, Mode=OneWay, FallbackValue=?}"/>
+                <Run Text="/"/>
+                <Run Text="{Binding SelectedLine.OriginalText.Length, Mode=OneWay, FallbackValue=?}"/>
+            </TextBlock>
+            <TextBlock
+                Grid.Row="2"
+                Grid.Column="6"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Right"
+                Margin="5, 0, 5, 0"
+                DockPanel.Dock="Right"
+            >
+                <Run
+                    Text="{Binding DoneStrings, Mode=OneWay, FallbackValue=0}"/><Run
+                    Text=" out of "/><Run
+                    Text="{Binding TotalStrings, Mode=OneWay, FallbackValue=0}"/><Run
+                    Text=" - "/><Run Text="{Binding CompletionPercent, Mode=OneWay, FallbackValue=?}"/><Run
+                    Text="%"/>
+            </TextBlock>
+            <local:DirtyButton
+                x:Name="SaveButton"
+                Grid.Column="4"
+                Dirty="{Binding Dirty}"
+                Grid.Row="2"
+                Width="20" 
+                Height="20"
+                Template="{DynamicResource SaveButtonTemplate}"
+                IsEnabled="{Binding Loaded}"
+                Click="SaveButton_Click"
+                HorizontalAlignment="Right"
+                DockPanel.Dock="Right"
+            >
+                <Button.ToolTip>
+                    <TextBlock>
                     Save project file (Ctrl-S).
                     Ctrl-Shift-S is "save as",
                     Ctrl-E exports back to .ovl.
-                </TextBlock>
-            </Button.ToolTip>
-            <Path
+                    </TextBlock>
+                </Button.ToolTip>
+                <Path
                 Data="F1 M 433.919,130.884L 350.07,47.0354C 341.029,37.9945 328.868,32.954 316.066,32.954L 47.959,32.954C 21.4762,32.954 -0.0459798,54.4762 -0.0459798,80.9589L -0.0459798,432.995C -0.0459798,459.478 21.4762,481 47.959,481L 399.995,481C 426.478,481 448,459.478 448,432.995L 448,164.888C 448,152.086 442.96,139.925 433.919,130.884 Z M 271.982,80.9589L 271.982,160.967L 143.969,160.967L 143.969,80.9589L 271.982,80.9589 Z M 393.994,432.995L 53.9596,432.995C 50.6792,432.995 47.959,430.275 47.959,426.994L 47.959,86.9595C 47.959,83.6792 50.6792,80.9589 53.9596,80.9589L 95.9639,80.9589L 95.9639,184.97C 95.9639,198.251 106.685,208.972 119.966,208.972L 295.984,208.972C 309.266,208.972 319.987,198.251 319.987,184.97L 319.987,84.8793L 398.235,163.127C 399.355,164.247 399.995,165.768 399.995,167.368L 399.995,426.994C 399.995,430.275 397.275,432.995 393.994,432.995 Z M 223.977,232.975C 175.412,232.975 135.968,272.419 135.968,320.984C 135.968,369.549 175.412,408.993 223.977,408.993C 272.542,408.993 311.986,369.549 311.986,320.984C 311.986,272.419 272.542,232.975 223.977,232.975 Z M 223.977,360.988C 201.895,360.988 183.973,343.066 183.973,320.984C 183.973,298.901 201.895,280.979 223.977,280.979C 246.059,280.979 263.981,298.901 263.981,320.984C 263.981,343.066 246.059,360.988 223.977,360.988 Z "
                 x:Name="SaveButtonPath"
                 Stretch="Uniform"
                 Margin="3, 3, 3, 3"
             />
-        </local:DirtyButton>
+            </local:DirtyButton>
+        </DockPanel>
     </Grid>
 </Window>

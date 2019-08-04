@@ -14,8 +14,8 @@ namespace Nyet2Hacker
 
         public Brush Fill
         {
-            get => (Brush)GetValue(FillProperty);
-            set => SetValue(FillProperty, value);
+            get => (Brush)this.GetValue(FillProperty);
+            set => this.SetValue(FillProperty, value);
         }
 
         public static readonly DependencyProperty FillProperty =
@@ -27,8 +27,8 @@ namespace Nyet2Hacker
 
         public Brush Stroke
         {
-            get => (Brush)GetValue(StrokeProperty);
-            set => SetValue(StrokeProperty, value);
+            get => (Brush)this.GetValue(StrokeProperty);
+            set => this.SetValue(StrokeProperty, value);
         }
 
         public static readonly DependencyProperty StrokeProperty =
@@ -58,12 +58,12 @@ namespace Nyet2Hacker
             {
                 if (!(this.FillProp is null))
                 {
-                    BindingOperations.ClearBinding(this.El, FillProp);
+                    BindingOperations.ClearBinding(this.El, this.FillProp);
                 }
 
                 if (!(this.StrokeProp is null))
                 {
-                    BindingOperations.ClearBinding(this.El, StrokeProp);
+                    BindingOperations.ClearBinding(this.El, this.StrokeProp);
                 }
             }
         }
@@ -72,7 +72,7 @@ namespace Nyet2Hacker
         {
             if (b.FillProp is DependencyProperty fillProp)
             {
-                b.El.SetBinding(fillProp, new Binding(nameof(Fill))
+                b.El.SetBinding(fillProp, new Binding(nameof(this.Fill))
                 {
                     Source = this,
                     Mode = BindingMode.OneWay
@@ -81,7 +81,7 @@ namespace Nyet2Hacker
 
             if (b.StrokeProp is DependencyProperty strokeProp)
             {
-                b.El.SetBinding(strokeProp, new Binding(nameof(Stroke))
+                b.El.SetBinding(strokeProp, new Binding(nameof(this.Stroke))
                 {
                     Source = this,
                     Mode = BindingMode.OneWay

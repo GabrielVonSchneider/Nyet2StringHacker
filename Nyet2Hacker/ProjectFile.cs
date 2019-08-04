@@ -8,6 +8,7 @@ namespace Nyet2Hacker
         public string OriginalText { get; set; }
         public string TransText { get; set; }
         public bool Done { get; set; }
+        public int Offset { get; set; }
     }
 
     internal class ProjectFile
