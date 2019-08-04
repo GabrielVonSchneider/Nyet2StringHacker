@@ -13,6 +13,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using static Nyet2Hacker.Constants;
 
 namespace Nyet2Hacker
 {
@@ -70,6 +71,8 @@ namespace Nyet2Hacker
         }
 
         public int Index => this.line.Index;
+        public int Offset => this.line.Offset;
+        public int OffsetMod => this.line.OffsetMod;
     }
 
     public class MainWindowViewModel : PropertyChangedBase
@@ -100,6 +103,37 @@ namespace Nyet2Hacker
                     this.SelectedLine.Done = !this.SelectedLine.Done;
                 }
             });
+        }
+
+        public int MaxLengthAt(int i)
+        {
+            if (i < 0 || i >= this.lines.Count)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(i),
+                    i,
+                    "Index out of range."
+                );
+            }
+
+            if (i == this.lines.Count - 1)
+            {
+                var lastLine = this.lines[i];
+                return lastLine.OriginalText.Length - lastLine.OffsetMod;
+            }
+
+            var me = this.lines[i];
+            var next = this.lines[i + 1];
+            int myOff = me.Offset + this.lines[i].OffsetMod;
+            int nextOff = next.Offset + this.lines[i + 1].OffsetMod;
+            return nextOff - myOff;
+        }
+
+        private int currentMaxLength;
+        public int CurrentMaxLength
+        {
+            get => this.currentMaxLength;
+            private set => this.Set(ref this.currentMaxLength, value);
         }
 
         internal void Load(ProjectFile proj, string path)
@@ -192,8 +226,11 @@ namespace Nyet2Hacker
         private void Validate()
         {
             var v = this.selectedLine;
+            int i = this.selectedIndex;
             this.TextTooLong = !(v is null)
-                && v.OriginalText?.Length < this.WorkText?.Length;
+                && i > 0 && i <= this.lines.Count
+                && (this.CurrentMaxLength = this.MaxLengthAt(i))
+                    > this.WorkText?.Length;
             this.CanCommit = !(v is null) && !this.textTooLong;
         }
 
@@ -295,7 +332,7 @@ namespace Nyet2Hacker
                 this.File = proj;
             }
 
-            public string Name { get;}
+            public string Name { get; }
             public ProjectFile File { get; }
         }
         private ProjectFile project;
@@ -715,12 +752,6 @@ namespace Nyet2Hacker
             return saved;
         }
 
-        private const int ovlArrayLength = 588;
-        private const int ovlArrayBase = 0x1CCFC;
-        private const int ovlStringBase = 0x1D810;
-
-        //if we somehow go beyond this, we're in trouble:
-        const int ovlMax = 0x20DFC;
         private void OvlEof()
         {
             this.WriteError("Encountered end of file while reading .ovl.");
@@ -736,7 +767,7 @@ namespace Nyet2Hacker
             {
                 fs = File.OpenRead(filename);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 string message = $"Unable to open file \"{filename}\" to import offsets.";
                 this.LogError(e, message);

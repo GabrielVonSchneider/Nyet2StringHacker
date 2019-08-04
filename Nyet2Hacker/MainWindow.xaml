@@ -341,7 +341,7 @@
             >
                 <Run Text="{Binding WorkText.Length, Mode=OneWay, FallbackValue=?}"/>
                 <Run Text="/"/>
-                <Run Text="{Binding SelectedLine.OriginalText.Length, Mode=OneWay, FallbackValue=?}"/>
+                <Run Text="{Binding CurrentMaxLength, Mode=OneWay, FallbackValue=?}"/>
             </TextBlock>
             <TextBlock
                 Grid.Row="2"
