@@ -1,4 +1,4 @@
-﻿using Microsoft.Win32;
+using Microsoft.Win32;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -71,8 +71,28 @@ namespace Nyet2Hacker
         }
 
         public int Index => this.line.Index;
+
         public int Offset => this.line.Offset;
-        public int OffsetMod => this.line.OffsetMod;
+        public int OffsetMod
+        {
+            get => this.line.OffsetMod;
+            internal set => this.Set(
+                v =>
+                {
+                    this.line.OffsetMod = v;
+                    this.Notify(nameof(this.EffOffset));
+                },
+                value,
+                this.OffsetMod
+            );
+        }
+
+        public int EffOffset => this.Offset + this.OffsetMod;
+
+        internal string GetEffectiveText()
+        {
+            return this.line.GetEffectiveText();
+        }
     }
 
     public class MainWindowViewModel : PropertyChangedBase
@@ -83,6 +103,8 @@ namespace Nyet2Hacker
         private string workText;
         private ReadOnlyCollection<LineViewModel> lines;
         public DelegateCommand DoneCommand { get; }
+        public DelegateCommand PosModCommand { get; }
+        public DelegateCommand NegModCommand { get; }
         private bool canCommit;
         private bool loaded;
 
@@ -101,6 +123,26 @@ namespace Nyet2Hacker
                 {
                     this.dirty = true;
                     this.SelectedLine.Done = !this.SelectedLine.Done;
+                }
+            });
+
+            this.PosModCommand = new DelegateCommand(false, () =>
+            {
+                if (this.selectedIndex > 0 &&
+                    this.CanPosMod(this.SelectedIndex))
+                {
+                    this.ModOffset(this.SelectedIndex, +1);
+                    this.Validate();
+                }
+            });
+
+            this.NegModCommand = new DelegateCommand(false, () =>
+            {
+                if (this.selectedIndex > 0 &&
+                    this.CanNegMod(this.SelectedIndex))
+                {
+                    this.ModOffset(this.SelectedIndex, -1);
+                    this.Validate();
                 }
             });
         }
@@ -127,6 +169,117 @@ namespace Nyet2Hacker
             int myOff = me.Offset + this.lines[i].OffsetMod;
             int nextOff = next.Offset + this.lines[i + 1].OffsetMod;
             return nextOff - myOff;
+        }
+
+        private bool CanPosMod(int i)
+        {
+            //just make sure you don't walk over yourself.
+            int length = this.lines[i].GetEffectiveText().Length;
+            return length > 1 && this.MaxLengthAt(i) > length;
+        }
+
+        private bool CanNegMod(int i)
+        {
+            if (i == 0)
+            {
+                return false;
+            }
+
+            var line = this.lines[i];
+            var newOffset = line.Offset + line.OffsetMod - 1;
+
+            //find the previous line.
+            LineViewModel prevLine = null;
+            int p;
+            for (p = i - 1; p >= 0; p--)
+            {
+                if (this.Lines[p].Offset != line.Offset)
+                {
+                    prevLine = this.Lines[p];
+                    break;
+                }
+            }
+
+            if (prevLine == null)
+            {
+                return newOffset >= ovlMinOffset;
+            }
+            else
+            {
+                var prevMaxLength = this.MaxLengthAt(p);
+                return prevMaxLength > 1
+                    && prevMaxLength > prevLine.GetEffectiveText().Length;
+            }
+        }
+
+        private List<LineViewModel> GetAdjacents(int i, bool includeCenter)
+        {
+            var adjacents = new List<LineViewModel>();
+            var center = this.lines[i];
+            for (int a = i + 1; i < this.lines.Count; i++)
+            {
+                var cand = this.lines[a];
+                if (cand.Offset != center.Offset)
+                {
+                    break;
+                }
+
+                adjacents.Add(cand);
+            }
+
+            if (includeCenter)
+            {
+                adjacents.Add(center);
+            }
+
+            for (int a = i - 1; a >= 0; a--)
+            {
+                var cand = this.lines[a];
+                if (cand.Offset != center.Offset)
+                {
+                    break;
+                }
+
+                adjacents.Add(cand);
+            }
+
+            return adjacents;
+        }
+
+        public void ModOffset(int i, int dir)
+        {
+            if (dir == 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(dir),
+                    "Cannot be 0."
+                );
+            }
+
+            bool can;
+            if (dir > 0)
+            {
+                dir = 1;
+                can = this.CanPosMod(i);
+            }
+            else
+            {
+                can = this.CanNegMod(i);
+                dir = -1;
+            }
+
+            if (!can)
+            {
+                throw new InvalidOperationException(
+                    $"Tried to mod offset at i with {dir} when unable to do so."
+                );
+            }
+
+            var adjacents = this.GetAdjacents(i, includeCenter: true);
+            foreach (var adj in adjacents)
+            {
+                adj.OffsetMod += dir;
+            }
         }
 
         private int currentMaxLength;
@@ -199,7 +352,20 @@ namespace Nyet2Hacker
             }
 
             this.Dirty = true;
-            this.SelectedLine.TransText = this.WorkText;
+            var adjacents = this.GetAdjacents(
+                this.SelectedIndex,
+                includeCenter: true
+            );
+
+            foreach (var adj in adjacents)
+            {
+                if (adj.OriginalText.Length
+                    == this.SelectedLine.OriginalText.Length)
+                {
+                    adj.TransText = this.WorkText;
+                }
+            }
+
             this.CalcCompletion();
             return true;
         }
@@ -229,9 +395,13 @@ namespace Nyet2Hacker
             int i = this.selectedIndex;
             this.TextTooLong = !(v is null)
                 && i > 0 && i <= this.lines.Count
-                && (this.CurrentMaxLength = this.MaxLengthAt(i))
-                    > this.WorkText?.Length;
+                && this.workText.Length > (
+                    this.CurrentMaxLength = this.MaxLengthAt(i)
+                );
             this.CanCommit = !(v is null) && !this.textTooLong;
+
+            this.NegModCommand.SetCanExecute(i > 0 && this.CanNegMod(i));
+            this.PosModCommand.SetCanExecute(i > 0 && this.CanPosMod(i));
         }
 
         public LineViewModel SelectedLine
@@ -896,21 +1066,18 @@ namespace Nyet2Hacker
             var buffer = new byte[2];
             foreach (var line in proj.Lines)
             {
-                if (string.IsNullOrEmpty(line.TransText))
-                {
-                    continue;
-                }
+                var effText = line.GetEffectiveText();
 
                 //Write the length byte:
                 fs.Seek(ovlArrayBase + (line.Index * 4), SeekOrigin.Begin);
-                fs.WriteByte((byte)line.TransText.Length);
+                fs.WriteByte((byte)effText.Length);
 
                 //And write the string.
                 fs.Seek(1, SeekOrigin.Current);
                 fs.Read(buffer, 0, 2);
                 var offset = ParseLittleEndInt16(buffer, 0);
                 fs.Seek(offset + ovlStringBase, SeekOrigin.Begin);
-                var bytes = ovlEncoding.GetBytes(line.TransText);
+                var bytes = ovlEncoding.GetBytes(effText);
                 fs.Write(bytes, 0, bytes.Length);
             }
 

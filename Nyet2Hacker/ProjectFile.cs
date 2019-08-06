@@ -10,17 +10,20 @@ namespace Nyet2Hacker
         public bool Done { get; set; }
         public int Offset { get; set; }
         public int OffsetMod { get; set; }
+
+        public string GetEffectiveText()
+        {
+            if (string.IsNullOrEmpty(this.TransText))
+            {
+                return this.OriginalText ?? "";
+            }
+
+            return this.TransText;
+        }
     }
 
     internal class ProjectFile
     {
-
-        private const int ovlArrayLength = 588;
-        private const int ovlArrayBase = 0x1CCFC;
-        private const int ovlStringBase = 0x1D810;
-
-        //if we somehow go beyond this, we're in trouble:
-        const int ovlMax = 0x20DFC;
         public List<Line> Lines { get; set; }
     }
 }

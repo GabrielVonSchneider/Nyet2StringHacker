@@ -18,12 +18,12 @@ namespace Nyet2Hacker
 
         public void SetCanExecute(bool can)
         {
-            if (can != this.canExecute)
+            bool changed = can != this.canExecute;
+            this.canExecute = can;
+            if (changed)
             {
                 this.CanExecuteChanged?.Invoke(this, new EventArgs());
             }
-
-            this.canExecute = can;
         }
 
         public bool CanExecute(object parameter)
