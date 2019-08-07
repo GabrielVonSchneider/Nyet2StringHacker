@@ -10,6 +10,7 @@ namespace Nyet2Hacker
         public bool Done { get; set; }
         public int Offset { get; set; }
         public int OffsetMod { get; set; }
+        public int EffOffset => this.Offset + this.OffsetMod;
 
         public string GetEffectiveText()
         {

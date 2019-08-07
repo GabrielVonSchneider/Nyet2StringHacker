@@ -87,7 +87,7 @@ namespace Nyet2Hacker
             );
         }
 
-        public int EffOffset => this.Offset + this.OffsetMod;
+        public int EffOffset => this.line.EffOffset;
 
         internal string GetEffectiveText()
         {
@@ -664,6 +664,12 @@ namespace Nyet2Hacker
             return buffer[offset] + (buffer[offset + 1] << 8);
         }
 
+        private static void WriteLittleEndInt16(Stream str, int n)
+        {
+            str.WriteByte((byte) n & byte.MaxValue);
+            str.WriteByte((byte)(n >> 8) & byte.MaxValue);
+        }
+
         private static string FormatBrackety<T>(IEnumerable<T> self)
         {
             var sb = new StringBuilder("[");
@@ -1057,25 +1063,26 @@ namespace Nyet2Hacker
 
         private bool SaveOvl(FileStream fs, ProjectFile proj)
         {
-            if (fs.Length < 0x20DFC)
+            if (fs.Length < ovlMax)
             {
                 this.OvlEof();
                 return false;
             }
 
-            var buffer = new byte[2];
             foreach (var line in proj.Lines)
             {
                 var effText = line.GetEffectiveText();
+                var offset = line.EffOffset;
 
                 //Write the length byte:
                 fs.Seek(ovlArrayBase + (line.Index * 4), SeekOrigin.Begin);
                 fs.WriteByte((byte)effText.Length);
+                
+                //Write the offset
+                fs.Position += 1;
+                WriteLittleEndInt16(fs, offset);
 
                 //And write the string.
-                fs.Seek(1, SeekOrigin.Current);
-                fs.Read(buffer, 0, 2);
-                var offset = ParseLittleEndInt16(buffer, 0);
                 fs.Seek(offset + ovlStringBase, SeekOrigin.Begin);
                 var bytes = ovlEncoding.GetBytes(effText);
                 fs.Write(bytes, 0, bytes.Length);

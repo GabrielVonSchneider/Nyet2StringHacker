@@ -353,12 +353,26 @@
                 Margin="5, 0, 0, 0"
                 Command="{Binding PosModCommand}"
             >
+                <Button.ToolTip>
+                    <TextBlock>
+                        Move the line forward. (Ctrl-Plus)<LineBreak/>
+                        This increases the maximum length of the preceding line (if any)
+                        and decreases its own maximum length.
+                    </TextBlock>
+                </Button.ToolTip>
                 <Path
                     Stretch="Uniform"
                     Data="F1 M 444.043,204.018L 300.028,204.018L 300.028,60.0033C 300.028,42.3214 285.706,28 268.025,28L 236.021,28C 218.34,28 204.018,42.3214 204.018,60.0033L 204.018,204.018L 60.0033,204.018C 42.3215,204.018 28,218.34 28,236.021L 28,268.025C 28,285.706 42.3215,300.028 60.0033,300.028L 204.018,300.028L 204.018,444.043C 204.018,461.725 218.34,476.046 236.021,476.046L 268.025,476.046C 285.706,476.046 300.028,461.725 300.028,444.043L 300.028,300.028L 444.043,300.028C 461.725,300.028 476.046,285.706 476.046,268.025L 476.046,236.021C 476.046,218.34 461.725,204.018 444.043,204.018 Z "
                 />
             </Button>
             <Button Command="{Binding NegModCommand}">
+                <Button.ToolTip>
+                    <TextBlock>
+                        Move the line backward. (Ctrl-Minus)<LineBreak/>
+                        This decreases the maximum length of the preceding line (if any)
+                        and increases the selected line's maximum length.
+                    </TextBlock>
+                </Button.ToolTip>
                 <Path
                     Stretch="Uniform"
                     Data="F1 M 436.997,184.99L 52.9573,184.99C 35.2754,184.99 20.954,199.312 20.954,216.993L 20.954,248.997C 20.954,266.679 35.2754,281 52.9573,281L 436.997,281C 454.678,281 469,266.679 469,248.997L 469,216.993C 469,199.312 454.678,184.99 436.997,184.99 Z "
