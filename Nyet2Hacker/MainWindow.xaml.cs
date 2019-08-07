@@ -1275,5 +1275,10 @@ namespace Nyet2Hacker
             e.Handled = true;
             this.ExitPrompt();
         }
+
+        private void ExportButton_Click(object sender, RoutedEventArgs e)
+        {
+            this.Save(FileType.Ovl);
+        }
     }
 }
