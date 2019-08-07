@@ -33,7 +33,7 @@
             x:Key="LineTemplate"
             DataType="{x:Type local:LineViewModel}"
         >
-            <Grid>
+            <Grid d:DesignWidth="500">
                 <Grid.Resources>
                     <Style TargetType="TextBlock">
                         <Setter Property="VerticalAlignment" Value="Center"/>
@@ -74,12 +74,15 @@
                 />
                 <TextBlock
                     Grid.Column="2"
-                    Text="{Binding OriginalText}" VerticalAlignment="Center" Margin="0,2"
+                    Text="{Binding OriginalText, FallbackValue=ThisIsTheOriginalText}"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Left"
+                    Margin="5,2"
                 />
                 <TextBlock
                     Grid.Column="3"
-                    Text="{Binding TransText}" VerticalAlignment="Center"
-                    HorizontalAlignment="Left" Margin="0,2"
+                    Text="{Binding TransText, FallbackValue=ThisIsTheTransText}" VerticalAlignment="Center"
+                    HorizontalAlignment="Left"
                 />
             </Grid>
         </DataTemplate>
@@ -114,6 +117,13 @@
                                 </ColorAnimationUsingKeyFrames>
                                 <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(local:PathApplicator.Fill).(SolidColorBrush.Color)" Storyboard.TargetName="pathApplicator">
                                     <EasingColorKeyFrame KeyTime="0" Value="White"/>
+                                </ColorAnimationUsingKeyFrames>
+                            </Storyboard>
+                        </VisualState>
+                        <VisualState x:Name="Disabled">
+                            <Storyboard>
+                                <ColorAnimationUsingKeyFrames Storyboard.TargetProperty="(Panel.Background).(SolidColorBrush.Color)" Storyboard.TargetName="grid">
+                                    <EasingColorKeyFrame KeyTime="0" Value="#00E8FF00"/>
                                 </ColorAnimationUsingKeyFrames>
                             </Storyboard>
                         </VisualState>
@@ -356,7 +366,7 @@
                 <Button.ToolTip>
                     <TextBlock>
                         Move the line forward. (Ctrl-Plus)<LineBreak/>
-                        This increases the maximum length of the preceding line (if any)
+                        This increases the maximum length of the preceding line (if any)<LineBreak/>
                         and decreases its own maximum length.
                     </TextBlock>
                 </Button.ToolTip>
@@ -369,7 +379,7 @@
                 <Button.ToolTip>
                     <TextBlock>
                         Move the line backward. (Ctrl-Minus)<LineBreak/>
-                        This decreases the maximum length of the preceding line (if any)
+                        This decreases the maximum length of the preceding line (if any)<LineBreak/>
                         and increases the selected line's maximum length.
                     </TextBlock>
                 </Button.ToolTip>

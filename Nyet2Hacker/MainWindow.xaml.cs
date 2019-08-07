@@ -367,6 +367,7 @@ namespace Nyet2Hacker
             }
 
             this.CalcCompletion();
+            this.Validate();
             return true;
         }
 
@@ -527,6 +528,7 @@ namespace Nyet2Hacker
             }
 
             p.Inlines.Add(new Run(text));
+            this.Output.ScrollToEnd();
         }
 
         private void WriteError(string error)
@@ -542,6 +544,7 @@ namespace Nyet2Hacker
             };
 
             this.Output.Document.Blocks.Add(p);
+            this.Output.ScrollToEnd();
         }
 
         private void LogError(Exception e, string message)
@@ -621,6 +624,7 @@ namespace Nyet2Hacker
 
         private void Window_DragEnter(object sender, DragEventArgs e)
         {
+            bool ok = false;
             e.Handled = true;
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
@@ -633,9 +637,15 @@ namespace Nyet2Hacker
                 {
                     if (this.GetFileType(files[0], out _))
                     {
+                        ok = true;
                         e.Effects = DragDropEffects.Copy;
                     }
                 }
+            }
+
+            if (!ok)
+            {
+                e.Effects = DragDropEffects.None;
             }
         }
 
@@ -666,8 +676,8 @@ namespace Nyet2Hacker
 
         private static void WriteLittleEndInt16(Stream str, int n)
         {
-            str.WriteByte((byte) n & byte.MaxValue);
-            str.WriteByte((byte)(n >> 8) & byte.MaxValue);
+            str.WriteByte((byte)(n & byte.MaxValue));
+            str.WriteByte((byte)((n >> 8) & byte.MaxValue));
         }
 
         private static string FormatBrackety<T>(IEnumerable<T> self)
@@ -971,7 +981,7 @@ namespace Nyet2Hacker
                 newChecksum += fs.ReadByte();
                 fs.Position += 1;
                 fs.Read(buffer, 0, 2);
-                int offset = ParseLittleEndInt16(buffer, 0);
+                pp.File.Lines[i].Offset = ParseLittleEndInt16(buffer, 0);
             }
 
             if (!(newChecksum == oldChecksum))
@@ -1077,7 +1087,7 @@ namespace Nyet2Hacker
                 //Write the length byte:
                 fs.Seek(ovlArrayBase + (line.Index * 4), SeekOrigin.Begin);
                 fs.WriteByte((byte)effText.Length);
-                
+
                 //Write the offset
                 fs.Position += 1;
                 WriteLittleEndInt16(fs, offset);
@@ -1110,6 +1120,21 @@ namespace Nyet2Hacker
                 else if (e.Key == Key.F)
                 {
                     this.Search();
+                }
+                else if (e.Key == Key.OemPlus)
+                {
+                    if (this.ViewModel.PosModCommand.CanExecute(default))
+                    {
+                        this.ViewModel.PosModCommand.Execute(default);
+                    }
+                }
+                else if (e.Key == Key.OemMinus)
+                {
+                    if (this.ViewModel.NegModCommand.CanExecute(default))
+                    {
+
+                        this.ViewModel.NegModCommand.Execute(default);
+                    }
                 }
             }
         }
