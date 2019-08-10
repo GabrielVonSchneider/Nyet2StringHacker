@@ -479,6 +479,18 @@ namespace Nyet2Hacker
             get => this.lines;
             private set => this.Set(ref this.lines, value);
         }
+
+        public void UnmarkDone()
+        {
+            foreach (var line in this.Lines)
+            {
+                line.Done = false;
+            }
+
+            this.Dirty = true;
+            this.DoneStrings = 0;
+            this.CompletionPercent = 0;
+        }
     }
 
     public partial class MainWindow : Window
@@ -1279,6 +1291,24 @@ namespace Nyet2Hacker
         private void ExportButton_Click(object sender, RoutedEventArgs e)
         {
             this.Save(FileType.Ovl);
+        }
+
+        private void ClearFlags_Click(object sender, RoutedEventArgs e)
+        {
+            e.Handled = true;
+            const string warning = "Warning: This will mark all Lines as \"not done\". Proceed?";
+            var reply = MessageBox.Show(
+                this,
+                warning,
+                "Clear all done flags",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning
+            );
+
+            if (reply == MessageBoxResult.Yes)
+            {
+                this.ViewModel.UnmarkDone();
+            }
         }
     }
 }

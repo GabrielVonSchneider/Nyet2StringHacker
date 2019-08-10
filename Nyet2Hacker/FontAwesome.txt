@@ -1,2 +1,3 @@
 ﻿This app uses icons by FontAwesome.
 The icons were modified for compatibiilty.
+Some icons were combined to form new ones.
