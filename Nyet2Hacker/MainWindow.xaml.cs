@@ -106,6 +106,7 @@ namespace Nyet2Hacker
             this.DoneStrings = this.Lines.Count;
             this.TotalStrings = this.Lines.Count;
             this.CompletionPercent = 12.34m;
+            this.WorkText = "TextText";
         }
     }
 
