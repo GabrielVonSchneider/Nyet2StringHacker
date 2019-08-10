@@ -323,6 +323,7 @@
                 Grid.Column="0"
                 IsChecked="{Binding SelectedLine.Done}"
                 Margin="3, 3, 3, 3"
+                Focusable="False"
             >
                 <TextBlock Focusable="False">
                 Is Edited
