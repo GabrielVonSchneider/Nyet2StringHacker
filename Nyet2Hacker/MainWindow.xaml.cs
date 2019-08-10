@@ -95,6 +95,20 @@ namespace Nyet2Hacker
         }
     }
 
+    public class TestMainWindowViewModel : MainWindowViewModel
+    {
+        public TestMainWindowViewModel()
+        {
+            this.Lines = new ReadOnlyCollection<LineViewModel>(
+                Enumerable.Repeat<LineViewModel>(null, 200).ToList()
+            );
+
+            this.DoneStrings = this.Lines.Count;
+            this.TotalStrings = this.Lines.Count;
+            this.CompletionPercent = 12.34m;
+        }
+    }
+
     public class MainWindowViewModel : PropertyChangedBase
     {
         private string projectPath;
@@ -121,7 +135,7 @@ namespace Nyet2Hacker
             {
                 if (!(this.SelectedLine is null))
                 {
-                    this.dirty = true;
+                    this.Dirty = true;
                     this.SelectedLine.Done = !this.SelectedLine.Done;
                 }
             });
@@ -309,19 +323,19 @@ namespace Nyet2Hacker
         public int TotalStrings
         {
             get => this.totalStrings;
-            private set => this.Set(ref this.totalStrings, value);
+            protected set => this.Set(ref this.totalStrings, value);
         }
 
         public int DoneStrings
         {
             get => this.doneStrings;
-            private set => this.Set(ref this.doneStrings, value);
+            protected set => this.Set(ref this.doneStrings, value);
         }
 
         public decimal CompletionPercent
         {
             get => this.completionPercent;
-            private set => this.Set(ref this.completionPercent, value);
+            protected set => this.Set(ref this.completionPercent, value);
         }
 
         public bool TextTooLong
@@ -477,7 +491,7 @@ namespace Nyet2Hacker
         public ReadOnlyCollection<LineViewModel> Lines
         {
             get => this.lines;
-            private set => this.Set(ref this.lines, value);
+            protected set => this.Set(ref this.lines, value);
         }
 
         public void UnmarkDone()
@@ -500,7 +514,6 @@ namespace Nyet2Hacker
         public MainWindow()
         {
             this.InitializeComponent();
-            this.DataContext = new MainWindowViewModel();
             this.SearchPanel.Visibility = Visibility.Collapsed;
         }
 
@@ -888,15 +901,27 @@ namespace Nyet2Hacker
             }
             else
             {
-                var dlg = new SaveFileDialog();
+                FileDialog dlg;
                 switch (type)
                 {
                     case FileType.Ovl:
-                        dlg.Filter = "NYET2.OVL|NYET2.OVL";
+                        dlg = new OpenFileDialog
+                        {
+                            Filter = "NYET2.OVL|NYET2.OVL",
+                            Title = "Open NYET2.OVL"
+                        };
                         break;
                     case FileType.Project:
-                        dlg.Filter = "Nyet 2 Hacker Files (*.n2h)|*.n2h";
+                        dlg = new SaveFileDialog
+                        {
+                            Title = "Save Project File",
+                            Filter = "Nyet 2 Hacker Files (*.n2h)|*.n2h"
+                        };
                         break;
+                    default:
+                        throw new InvalidOperationException(
+                            $"Unknown FileType {type}"
+                        );
                 }
                 this.AllowDrop = false;
                 bool ok = dlg.ShowDialog(this) == true;
@@ -1158,52 +1183,59 @@ namespace Nyet2Hacker
             this.SearchBox.SelectAll();
         }
 
+        private void SearchOn(bool up)
+        {
+            string searchText = this.SearchBox.Text;
+            int startIndex = 0;
+            if (this.LineList.SelectedIndex >= 0)
+            {
+                startIndex = this.LineList.SelectedIndex;
+            }
+
+            bool match(int index)
+            {
+                return this.ViewModel.Lines[index].OriginalText?.IndexOf(
+                    searchText,
+                    StringComparison.CurrentCultureIgnoreCase
+                ) >= 0;
+            }
+            int lineCount = this.LineList.Items.Count;
+            int i = startIndex;
+            if (up)
+            {
+                for (i--; i >= 0; i--)
+                {
+                    if (match(i))
+                    {
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                for (i++; i < lineCount; i++)
+                {
+                    if (match(i))
+                    {
+                        break;
+                    }
+                }
+            }
+
+            if (i >= 0 && i < lineCount)
+            {
+                this.LineList.SelectedIndex = i;
+                this.LineList.ScrollIntoView(this.LineList.Items[i]);
+            }
+        }
+
         private void SearchBox_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
             {
-                string searchText = this.SearchBox.Text;
-                int startIndex = 0;
-                if (this.LineList.SelectedIndex >= 0)
-                {
-                    startIndex = this.LineList.SelectedIndex;
-                }
-
-                bool match(int index)
-                {
-                    return this.ViewModel.Lines[index].OriginalText?.IndexOf(
-                        searchText,
-                        StringComparison.CurrentCultureIgnoreCase
-                    ) >= 0;
-                }
-                int lineCount = this.LineList.Items.Count;
-                int i = startIndex;
-                if ((e.KeyboardDevice.Modifiers & ModifierKeys.Shift) > 0)
-                {
-                    for (i--; i >= 0; i--)
-                    {
-                        if (match(i))
-                        {
-                            break;
-                        }
-                    }
-                }
-                else
-                {
-                    for (i++; i < lineCount; i++)
-                    {
-                        if (match(i))
-                        {
-                            break;
-                        }
-                    }
-                }
-
-                if (i >= 0 && i < lineCount)
-                {
-                    this.LineList.SelectedIndex = i;
-                    this.LineList.ScrollIntoView(this.LineList.Items[i]);
-                }
+                this.SearchOn(
+                    up: (e.KeyboardDevice.Modifiers & ModifierKeys.Shift) > 0
+                );
             }
             else if (e.Key == Key.Escape)
             {
@@ -1223,7 +1255,6 @@ namespace Nyet2Hacker
                 this.LineList.FocusIndex(i);
             }
 
-            this.Editor.Focus();
             this.SearchPanel.Visibility = Visibility.Collapsed;
         }
 
@@ -1296,7 +1327,7 @@ namespace Nyet2Hacker
         private void ClearFlags_Click(object sender, RoutedEventArgs e)
         {
             e.Handled = true;
-            const string warning = "Warning: This will mark all Lines as \"not done\". Proceed?";
+            const string warning = "Warning: This will mark all lines as \"not done\". Proceed?";
             var reply = MessageBox.Show(
                 this,
                 warning,
@@ -1309,6 +1340,26 @@ namespace Nyet2Hacker
             {
                 this.ViewModel.UnmarkDone();
             }
+        }
+
+        private void SearchButton_Click(object sender, RoutedEventArgs e)
+        {
+            this.Search();
+        }
+
+        private void NextSearchResultButton_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            e.Handled = true;
+            this.SearchOn(up: false);
+        }
+
+        private void PreviousSearchResultButton_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            this.SearchOn(up: true);
         }
     }
 }

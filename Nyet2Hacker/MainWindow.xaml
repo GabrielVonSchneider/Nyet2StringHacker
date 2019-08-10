@@ -5,27 +5,36 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Nyet2Hacker"
         mc:Ignorable="d"
-        Title="Nyet II String Hacker" Height="460" Width="659"
+        Title="Nyet II String Hacker" Height="500" Width="680"
         FontFamily="Calibri" AllowDrop="True"
         DragEnter="Window_DragEnter"
         Drop="Window_Drop"
         KeyDown="Window_KeyDown"
         Focusable="False"
-        d:DataContext="{d:DesignInstance Type=local:MainWindowViewModel}"
+        MinWidth="680"
+        MinHeight="300"
     >
+    <Window.DataContext>
+        <local:MainWindowViewModel/>
+    </Window.DataContext>
+    <d:DesignerProperties.DataContext>
+        <local:TestMainWindowViewModel/>
+    </d:DesignerProperties.DataContext>
     <Window.InputBindings>
         <KeyBinding Key="D" Modifiers="Ctrl" Command="{Binding DoneCommand}"/>
     </Window.InputBindings>
     <Window.Resources>
         <local:IntToHexStringConverter x:Key="IntToHexStringConverter"/>
-        <Style TargetType="Button">
+        <Style TargetType="Button" x:Key="ButtonStyle">
             <Setter Property="Focusable" Value="False"/>
             <Setter Property="Template" Value="{DynamicResource ButtonTemplate}"/>
             <Setter Property="Width" Value="20"/>
             <Setter Property="Height" Value="20"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="3, 3, 3, 3"/>
+            <Setter Property="Focusable" Value="False"/>
         </Style>
+        <Style TargetType="Button" BasedOn="{StaticResource ButtonStyle}"/>
         <Style TargetType="CheckBox">
             <Setter Property="Margin" Value="5, 0, 5, 0"/>
         </Style>
@@ -278,28 +287,49 @@
             Margin="2, 2, 2, 2"
             HorizontalAlignment="Stretch"
         >
+            <DockPanel.Resources>
+                <Style TargetType="Button" BasedOn="{StaticResource ButtonStyle}">
+                    <Setter Property="Height" Value="13"/>
+                    <Setter Property="Width" Value="13"/>
+                    <Setter Property="HorizontalAlignment" Value="Left"/>
+                    <Setter Property="VerticalAlignment" Value="Center"/>
+                    <Setter Property="Margin" Value="0, 0, 0, 0"/>
+                    <Setter Property="Focusable" Value="False"/>
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Setter Property="Padding" Value="0"/>
+                    <Setter Property="Padding" Value="2, 2, 2, 2"/>
+                </Style>
+            </DockPanel.Resources>
             <Button
                 Name="ExitSearchButton"
-                FocusVisualStyle="{x:Null}"
-                Height="15"
-                Width="15"
-                HorizontalContentAlignment="Center"
-                VerticalContentAlignment="Center"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Template="{StaticResource ButtonTemplate}"
-                Margin="1, 1, 1, 1"
                 Click="ExitSearchButton_Click"
                 ToolTip="Close Search Bar (Esc)"
-                Focusable="False"
-                BorderThickness="0"
-                Padding="0"
+                Margin="0, 0, 3, 0"
             >
                 <Path
                     x:Name="ExitSearchButtonPath"
                     Stretch="Uniform"
-                    Margin="3, 3, 3, 3"
                     Data="F1 M 282.727,236L 382.818,135.909C 395.059,123.668 395.059,103.746 382.818,91.4246L 360.575,69.1821C 348.254,56.9408 328.412,56.9408 316.091,69.1821L 216,169.273L 115.909,69.1821C 103.668,56.9408 83.7459,56.9408 71.4245,69.1821L 49.1822,91.4246C 36.9409,103.746 36.9409,123.668 49.1822,135.909L 149.273,236L 49.1822,336.091C 36.9409,348.332 36.9409,368.254 49.1822,380.575L 71.4245,402.818C 83.7459,415.059 103.668,415.059 115.909,402.818L 216,302.727L 316.091,402.818C 328.332,415.059 348.254,415.059 360.575,402.818L 382.818,380.575C 395.059,368.254 395.059,348.412 382.818,336.091L 282.727,236 Z "
+                />
+            </Button>
+            <Button
+                Name="NextSearchResultButton"
+                Click="NextSearchResultButton_Click"
+                ToolTip="Next search result (Enter)"
+            >
+                <Path
+                    Stretch="Uniform"
+                    Data="F1 M 669.737,466.5L 691.979,488.742C 701.34,498.103 701.34,513.304 691.979,522.665L 497.639,717.085C 488.198,726.446 472.997,726.446 463.716,717.085L 269.296,522.665C 259.935,513.224 259.935,498.023 269.296,488.742L 291.538,466.5C 300.979,457.059 316.501,457.219 325.782,466.9L 440.593,587.392L 440.593,300.002C 440.593,286.721 451.315,276 464.596,276L 496.599,276C 509.961,276 520.602,286.721 520.602,300.002L 520.602,587.392L 635.414,466.9C 644.774,457.139 660.216,456.898 669.737,466.5 Z  "
+                />
+            </Button>
+            <Button
+                Name="PreviousSearchResultButton"
+                Click="PreviousSearchResultButton_Click"
+                ToolTip="Previous search result (Shift-Enter)"
+            >
+                <Path
+                    Stretch="Uniform"
+                    Data="F1 M 291.538,533.606L 269.296,511.364C 259.935,502.003 259.935,486.802 269.296,477.441L 463.636,283.021C 473.077,273.66 488.278,273.66 497.559,283.021L 691.979,477.441C 701.34,486.882 701.34,502.083 691.979,511.364L 669.737,533.606C 660.296,543.047 644.774,542.887 635.493,533.206L 520.682,412.714L 520.682,700.104C 520.682,713.385 509.96,724.106 496.679,724.106L 464.676,724.106C 451.314,724.106 440.673,713.385 440.673,700.104L 440.673,412.714L 325.862,533.206C 316.501,542.967 301.059,543.208 291.538,533.606 Z "
                 />
             </Button>
             <TextBox
@@ -404,15 +434,16 @@
                 Grid.Row="2"
                 Grid.Column="6"
                 VerticalAlignment="Center"
-                HorizontalAlignment="Right"
-                Margin="5, 0, 5, 0"
+                TextAlignment="Right"
+                Margin="5,10"
                 DockPanel.Dock="Right"
+                Width="120"
             >
                 <Run
-                    Text="{Binding DoneStrings, Mode=OneWay, FallbackValue=0}"/><Run
+                    Text="{Binding DoneStrings, Mode=OneWay, FallbackValue=999}"/><Run
                     Text=" out of "/><Run
-                    Text="{Binding TotalStrings, Mode=OneWay, FallbackValue=0}"/><Run
-                    Text=" - "/><Run Text="{Binding CompletionPercent, Mode=OneWay, FallbackValue=?}"/><Run
+                    Text="{Binding TotalStrings, Mode=OneWay, FallbackValue=999}"/><Run
+                    Text=" - "/><Run Text="{Binding CompletionPercent, Mode=OneWay, FallbackValue=100}"/><Run
                     Text="%"/>
             </TextBlock>
             <Button
@@ -424,6 +455,7 @@
                 Click="ExportButton_Click"
                 HorizontalAlignment="Right"
                 DockPanel.Dock="Right"
+                ToolTip="Write lines back to .ovl file (Ctrl-E)."
             >
                 <Path
                     Stretch="Uniform"
@@ -447,8 +479,7 @@
                 <Button.ToolTip>
                     <TextBlock>
                     Save project file (Ctrl-S).
-                    Ctrl-Shift-S is "save as",
-                    Ctrl-E exports back to .ovl.
+                    Ctrl-Shift-S is "save as".
                     </TextBlock>
                 </Button.ToolTip>
                 <Path
@@ -469,6 +500,21 @@
                 <Path
                     Stretch="Uniform"
                     Data="M 830.565,543.368L 790.96,503.763C 781.599,494.402 766.397,494.402 757.036,503.763L 517.569,743.311L 406.117,631.778C 396.756,622.417 381.554,622.417 372.193,631.778L 332.508,671.542C 323.147,680.903 323.147,696.105 332.508,705.546L 500.527,873.645C 509.968,883.006 525.17,883.006 534.451,873.645L 830.485,577.372C 839.846,567.931 839.846,552.729 830.565,543.368 Z M 569.335,493.202L 639.343,423.274C 647.904,414.633 647.904,400.712 639.343,392.151L 623.741,376.629C 615.18,367.988 601.259,367.988 592.618,376.629L 522.69,446.557L 452.682,376.629C 444.121,367.988 430.199,367.988 421.558,376.629L 406.037,392.151C 397.396,400.712 397.396,414.633 406.037,423.274L 476.045,493.202L 406.037,563.21C 397.396,571.771 397.396,585.773 406.037,594.334L 421.558,609.855C 430.199,618.496 444.121,618.496 452.682,609.855L 522.69,539.928L 592.618,609.855C 601.259,618.496 615.18,618.496 623.741,609.855L 639.343,594.334C 647.904,585.773 647.904,571.851 639.343,563.21L 569.335,493.202 Z"
+                >
+                </Path>
+            </Button>
+            <Button
+                Name="SearchButton"
+                IsEnabled="{Binding Loaded}"
+                DockPanel.Dock="Right"
+                HorizontalAlignment="Right"
+                Margin="0, 0, 5, 0"
+                ToolTip="Search the original text (Ctrl-F)"
+                Click="SearchButton_Click"
+            >
+                <Path
+                    Stretch="Uniform"
+                    Data="F1 M 753.097,666.77L 653.326,567.079C 648.845,562.518 642.765,560.038 636.364,560.038L 620.042,560.038C 647.645,524.754 664.047,480.349 664.047,432.023C 664.047,317.131 570.917,224 456.024,224C 341.131,224 248,317.131 248,432.023C 248,546.917 341.131,640.047 456.024,640.047C 504.349,640.047 548.754,623.645 584.038,596.042L 584.038,612.364C 584.038,618.765 586.518,624.845 591.079,629.326L 690.77,729.097C 700.131,738.458 715.333,738.458 724.694,729.097L 752.937,700.774C 762.378,691.333 762.378,676.131 753.097,666.77 Z M 456.024,560.038C 385.296,560.038 328.009,502.832 328.009,432.023C 328.009,361.295 385.216,304.009 456.024,304.009C 526.752,304.009 584.038,361.216 584.038,432.023C 584.038,502.751 526.832,560.038 456.024,560.038 Z "
                 >
                 </Path>
             </Button>
